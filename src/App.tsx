@@ -9,7 +9,7 @@ import {
   type MissionCompletion,
   type MissionInput,
 } from '../shared/mockMission'
-import { distanceTargetMetres, type MovementMode, startWalkTracking } from './movement'
+import { distanceTargetMetres, rivalDistanceAtElapsedSeconds, type MovementMode, startWalkTracking } from './movement'
 
 type JourneyState = 'idle' | 'generating' | 'ready' | 'active' | 'paused' | 'completing' | 'completed'
 
@@ -41,6 +41,20 @@ function milestoneFor(progress: number, mission: Mission): string {
   if (progress >= 50) return mission.milestones[50]
   if (progress >= 25) return mission.milestones[25]
   return mission.briefing
+}
+
+function rivalGapLabel(playerDistanceMetres: number, rivalDistanceMetres: number): string {
+  const gapMetres = Math.round(Math.abs(rivalDistanceMetres - playerDistanceMetres))
+  if (gapMetres === 0) return 'even with you'
+  return rivalDistanceMetres > playerDistanceMetres ? `${gapMetres}m ahead` : `${gapMetres}m behind`
+}
+
+function arrivalRivalSummary(playerDistanceMetres: number, rivalDistanceMetres: number): string {
+  const gapMetres = Math.round(Math.abs(playerDistanceMetres - rivalDistanceMetres))
+  if (gapMetres === 0) return 'You and Yuzu, the simulated AI pacer, finished even.'
+  return playerDistanceMetres > rivalDistanceMetres
+    ? `You finished ${gapMetres}m ahead of Yuzu, the simulated AI pacer.`
+    : `Yuzu, the simulated AI pacer, finished ${gapMetres}m ahead of you.`
 }
 
 export function DispatchScreen({ onGenerate, generating }: { onGenerate: (input: MissionInput, movementMode: MovementMode) => void; generating: boolean }) {
@@ -124,17 +138,19 @@ export function DispatchScreen({ onGenerate, generating }: { onGenerate: (input:
   )
 }
 
-export function JourneyScreen({ mission, state, stats, targetDistanceMetres, movementMode, locationStatus, onPause, onEnd }: {
+export function JourneyScreen({ mission, state, stats, targetDistanceMetres, availableMinutes, movementMode, locationStatus, onPause, onEnd }: {
   mission: Mission
   state: Extract<JourneyState, 'ready' | 'active' | 'paused' | 'completing'>
   stats: JourneyStats
   targetDistanceMetres: number
+  availableMinutes: AvailableMinutes
   movementMode: MovementMode
   locationStatus: string
   onPause: () => void
   onEnd: () => void
 }) {
   const distance = Math.round(stats.distanceMetres)
+  const rivalDistance = rivalDistanceAtElapsedSeconds(targetDistanceMetres, availableMinutes, mission.title, stats.elapsedSeconds)
   const progressLabel = state === 'ready' ? 'Mission ready' : state === 'paused' ? 'Journey paused' : state === 'completing' ? 'Writing arrival…' : movementMode === 'walk' ? 'Walk Mode' : 'Demo Journey'
   const ringRadius = 84
   const ringCircumference = 2 * Math.PI * ringRadius
@@ -180,6 +196,11 @@ export function JourneyScreen({ mission, state, stats, targetDistanceMetres, mov
         <span><strong>{Math.max(targetDistanceMetres - distance, 0)}m</strong> remaining</span>
       </section>
 
+      <p className="rival-comparison" aria-live="polite">
+        <span className="rival-tag">AI PACER · SIMULATED</span>
+        <strong>Yuzu</strong>: {rivalGapLabel(stats.distanceMetres, rivalDistance)}
+      </p>
+
       <div className="journey-actions">
         <button className="secondary-button" type="button" onClick={onPause} disabled={state === 'ready' || state === 'completing'}>
           {state === 'paused' ? 'Resume Journey' : 'Pause'}
@@ -190,13 +211,16 @@ export function JourneyScreen({ mission, state, stats, targetDistanceMetres, mov
   )
 }
 
-export function ArrivalScreen({ mission, completion, stats, onRestart }: {
+export function ArrivalScreen({ mission, completion, stats, targetDistanceMetres, availableMinutes, onRestart }: {
   mission: Mission
   completion: MissionCompletion
   stats: JourneyStats
+  targetDistanceMetres: number
+  availableMinutes: AvailableMinutes
   onRestart: () => void
 }) {
   const distance = Math.round(stats.distanceMetres)
+  const rivalDistance = rivalDistanceAtElapsedSeconds(targetDistanceMetres, availableMinutes, mission.title, stats.elapsedSeconds)
   const [shareStatus, setShareStatus] = useState('')
   const [mealOpen, setMealOpen] = useState(false)
   const text = `HIYAKU — ${mission.title}: ${completion.rank}. ${distance}m in ${formatDuration(stats.elapsedSeconds)}.`
@@ -237,6 +261,7 @@ export function ArrivalScreen({ mission, completion, stats, onRestart }: {
       </section>
       <section className="epilogue">
         <p>{completion.epilogue}</p>
+        <p className="rival-arrival-summary">{arrivalRivalSummary(stats.distanceMetres, rivalDistance)}</p>
         <p className="historical-note"><strong>From Edo:</strong> {mission.historicalNote}</p>
         <p className="next-mission">Next dispatch: {completion.nextMissionTeaser}</p>
       </section>
@@ -270,6 +295,7 @@ export default function App() {
   const [stats, setStats] = useState<JourneyStats>({ elapsedSeconds: 0, progress: 0, distanceMetres: 0 })
   const [completion, setCompletion] = useState<MissionCompletion | null>(null)
   const [targetDistanceMetres, setTargetDistanceMetres] = useState<number | null>(null)
+  const [availableMinutes, setAvailableMinutes] = useState<AvailableMinutes>(10)
   const [movementMode, setMovementMode] = useState<MovementMode>('demo')
   const [locationStatus, setLocationStatus] = useState('')
   const distanceMetresRef = useRef(0)
@@ -364,6 +390,7 @@ export default function App() {
       setStats({ elapsedSeconds: 0, progress: 0, distanceMetres: 0 })
       setCompletion(null)
       setTargetDistanceMetres(distanceTargetMetres(input.availableMinutes, input.energy))
+      setAvailableMinutes(input.availableMinutes)
       setMovementMode(selectedMovementMode)
       setLocationStatus('')
       setState('ready')
@@ -374,12 +401,12 @@ export default function App() {
 
   if (state === 'idle' || state === 'generating') return <DispatchScreen onGenerate={generateMission} generating={state === 'generating'} />
   if ((state === 'ready' || state === 'active' || state === 'paused' || state === 'completing') && activeMission) {
-    return <JourneyScreen mission={activeMission} state={state} stats={stats} targetDistanceMetres={targetDistanceMetres ?? 0} movementMode={movementMode} locationStatus={locationStatus} onPause={() => setState((current) => current === 'paused' ? 'active' : 'paused')} onEnd={() => {
+    return <JourneyScreen mission={activeMission} state={state} stats={stats} targetDistanceMetres={targetDistanceMetres ?? 0} availableMinutes={availableMinutes} movementMode={movementMode} locationStatus={locationStatus} onPause={() => setState((current) => current === 'paused' ? 'active' : 'paused')} onEnd={() => {
       distanceMetresRef.current = targetDistanceMetres ?? 0
       setStats((current) => ({ ...current, progress: 100, distanceMetres: targetDistanceMetres ?? current.distanceMetres }))
       setState('completing')
     }} />
   }
-  if (state === 'completed' && activeMission && completion) return <ArrivalScreen mission={activeMission} completion={completion} stats={stats} onRestart={() => setState('idle')} />
+  if (state === 'completed' && activeMission && completion) return <ArrivalScreen mission={activeMission} completion={completion} stats={stats} targetDistanceMetres={targetDistanceMetres ?? 0} availableMinutes={availableMinutes} onRestart={() => setState('idle')} />
   return <DispatchScreen onGenerate={generateMission} generating={false} />
 }

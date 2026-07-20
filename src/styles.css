@@ -95,6 +95,9 @@ legend, .name-field > span { display: block; margin-bottom: 9px; color: #e8e4dc;
 .mission-message .location-status { margin-top: 7px; color: #f7d98a; font-family: "Avenir Next", "Hiragino Kaku Gothic ProN", sans-serif; font-size: .78rem; font-weight: 700; }
 .journey-detail { display: flex; justify-content: space-between; gap: 12px; margin: 15px 2px; color: #c9c5d0; font-size: .75rem; letter-spacing: .04em; text-transform: uppercase; }
 .journey-detail strong { margin-right: 4px; color: #f7d98a; font-size: .98rem; }
+.rival-comparison { margin: 0 2px 15px; color: #e8e4dc; font-size: .87rem; line-height: 1.5; }
+.rival-comparison strong { color: #f7d98a; }
+.rival-tag { display: inline-block; margin-right: 7px; padding: 2px 6px; border: 1px solid rgb(156 120 255 / 70%); border-radius: 999px; color: #d4c6ff; font-size: .61rem; font-weight: 900; letter-spacing: .09em; vertical-align: 1px; }
 .journey-actions, .arrival-actions { display: grid; grid-template-columns: 1fr 1.25fr; gap: 10px; margin-top: auto; }
 
 .arrival-screen {
@@ -115,6 +118,7 @@ legend, .name-field > span { display: block; margin-bottom: 9px; color: #e8e4dc;
 .arrival-stats span { display: block; margin-top: 4px; color: #d4cddd; font-size: .64rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
 .epilogue { padding: 1px 0; }
 .epilogue > p:first-child { margin: 0; color: #f7f2e8; font-family: Georgia, "Hiragino Mincho ProN", serif; font-size: 1.08rem; line-height: 1.65; }
+.rival-arrival-summary { margin: 17px 0 0; color: #f7d98a; font-weight: 700; line-height: 1.5; }
 .historical-note { margin: 17px 0 0; padding: 13px 14px; border-left: 3px solid #9c78ff; border-radius: 0 8px 8px 0; background: rgb(156 120 255 / 13%); color: #e8e4dc; font-size: .9rem; line-height: 1.6; }
 .historical-note strong { color: #d7caff; }
 .next-mission { margin: 16px 0; color: #f7d98a; font-weight: 700; line-height: 1.5; }

@@ -17,6 +17,31 @@ export function distanceTargetMetres(availableMinutes: AvailableMinutes, energy:
   return availableMinutes * walkingMetresPerMinute[energy]
 }
 
+function hashText(value: string): number {
+  let hash = 2166136261
+  for (let index = 0; index < value.length; index += 1) {
+    hash ^= value.charCodeAt(index)
+    hash = Math.imul(hash, 16777619)
+  }
+  return hash >>> 0
+}
+
+export function rivalPaceMultiplier(missionTitle: string): number {
+  const minimumMultiplier = 0.92
+  const multiplierRange = 0.16
+  return minimumMultiplier + hashText(missionTitle) / 0xffff_ffff * multiplierRange
+}
+
+export function rivalDistanceAtElapsedSeconds(
+  targetDistanceMetres: number,
+  availableMinutes: AvailableMinutes,
+  missionTitle: string,
+  elapsedSeconds: number,
+): number {
+  const paceMetresPerSecond = targetDistanceMetres / (availableMinutes * 60) * rivalPaceMultiplier(missionTitle)
+  return Math.min(targetDistanceMetres, Math.max(0, paceMetresPerSecond * elapsedSeconds))
+}
+
 export function haversineDistanceMetres(from: Coordinate, to: Coordinate): number {
   const earthRadiusMetres = 6_371_000
   const toRadians = (degrees: number) => degrees * Math.PI / 180
