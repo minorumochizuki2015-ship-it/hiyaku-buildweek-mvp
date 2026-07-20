@@ -107,3 +107,33 @@ export function isCompletionSummary(value: unknown): value is CompletionSummary 
     typeof summary.missionTitle === 'string'
   )
 }
+
+function isNonEmptyString(value: unknown): value is string {
+  return typeof value === 'string' && value.trim().length > 0
+}
+
+export function isMission(value: unknown): value is Mission {
+  if (!value || typeof value !== 'object') return false
+  const mission = value as Record<string, unknown>
+  if (!mission.milestones || typeof mission.milestones !== 'object') return false
+  const milestones = mission.milestones as Record<string, unknown>
+  return (
+    isNonEmptyString(mission.title) &&
+    isNonEmptyString(mission.briefing) &&
+    isNonEmptyString(milestones['25']) &&
+    isNonEmptyString(milestones['50']) &&
+    isNonEmptyString(milestones['75']) &&
+    isNonEmptyString(mission.historicalNote) &&
+    isNonEmptyString(mission.completionStyle)
+  )
+}
+
+export function isMissionCompletion(value: unknown): value is MissionCompletion {
+  if (!value || typeof value !== 'object') return false
+  const completion = value as Record<string, unknown>
+  return (
+    isNonEmptyString(completion.rank) &&
+    isNonEmptyString(completion.epilogue) &&
+    isNonEmptyString(completion.nextMissionTeaser)
+  )
+}

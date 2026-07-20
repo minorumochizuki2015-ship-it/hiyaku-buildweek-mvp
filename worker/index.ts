@@ -3,7 +3,29 @@ import {
   isMissionInput,
   mockCompleteMission,
   mockGenerateMission,
+  type CompletionSummary,
+  type MissionInput,
 } from '../shared/mockMission'
+
+interface Env {
+  OPENAI_API_KEY?: string
+}
+
+interface NarrativeMission {
+  title: string
+  briefing: string
+  milestones: Record<25 | 50 | 75, string>
+  completionStyle: string
+}
+
+interface NarrativeCompletion {
+  epilogue: string
+  nextMissionTeaser: string
+}
+
+const openAiUrl = 'https://api.openai.com/v1/chat/completions'
+const openAiModel = 'gpt-5.6-terra'
+const openAiTimeoutMs = 8_000
 
 const jsonHeaders = {
   'content-type': 'application/json; charset=UTF-8',
@@ -23,8 +45,143 @@ async function readJson(request: Request): Promise<unknown | null> {
   }
 }
 
+function isNonEmptyString(value: unknown): value is string {
+  return typeof value === 'string' && value.trim().length > 0
+}
+
+function isNarrativeMission(value: unknown): value is NarrativeMission {
+  if (!value || typeof value !== 'object') return false
+  const mission = value as Record<string, unknown>
+  if (!mission.milestones || typeof mission.milestones !== 'object') return false
+  const milestones = mission.milestones as Record<string, unknown>
+  return (
+    isNonEmptyString(mission.title) &&
+    isNonEmptyString(mission.briefing) &&
+    isNonEmptyString(milestones['25']) &&
+    isNonEmptyString(milestones['50']) &&
+    isNonEmptyString(milestones['75']) &&
+    isNonEmptyString(mission.completionStyle)
+  )
+}
+
+function isNarrativeCompletion(value: unknown): value is NarrativeCompletion {
+  if (!value || typeof value !== 'object') return false
+  const completion = value as Record<string, unknown>
+  return isNonEmptyString(completion.epilogue) && isNonEmptyString(completion.nextMissionTeaser)
+}
+
+function chatContent(value: unknown): string | null {
+  if (!value || typeof value !== 'object') return null
+  const payload = value as { choices?: Array<{ message?: { content?: unknown } }> }
+  const content = payload.choices?.[0]?.message?.content
+  return typeof content === 'string' ? content : null
+}
+
+async function callOpenAi<T>(env: Env, requestBody: unknown, validate: (value: unknown) => value is T): Promise<T | null> {
+  if (!env.OPENAI_API_KEY) return null
+
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), openAiTimeoutMs)
+    try {
+      const response = await fetch(openAiUrl, {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          authorization: `Bearer ${env.OPENAI_API_KEY}`,
+        },
+        body: JSON.stringify(requestBody),
+        signal: controller.signal,
+      })
+      if (!response.ok) continue
+
+      const content = chatContent(await response.json())
+      if (!content) continue
+      const parsed: unknown = JSON.parse(content)
+      if (validate(parsed)) return parsed
+    } catch {
+      // The second attempt, then the deterministic local fallback, keeps the UI responsive.
+    } finally {
+      clearTimeout(timeout)
+    }
+  }
+
+  return null
+}
+
+const missionSchema = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['title', 'briefing', 'milestones', 'completionStyle'],
+  properties: {
+    title: { type: 'string', minLength: 1 },
+    briefing: { type: 'string', minLength: 1 },
+    milestones: {
+      type: 'object',
+      additionalProperties: false,
+      required: ['25', '50', '75'],
+      properties: {
+        25: { type: 'string', minLength: 1 },
+        50: { type: 'string', minLength: 1 },
+        75: { type: 'string', minLength: 1 },
+      },
+    },
+    completionStyle: { type: 'string', minLength: 1 },
+  },
+}
+
+const completionSchema = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['epilogue', 'nextMissionTeaser'],
+  properties: {
+    epilogue: { type: 'string', minLength: 1 },
+    nextMissionTeaser: { type: 'string', minLength: 1 },
+  },
+}
+
+function missionRequest(input: MissionInput): unknown {
+  return {
+    model: openAiModel,
+    messages: [
+      {
+        role: 'system',
+        content: 'You write concise, warm fictional Edo courier mission narrative. Return only JSON matching the supplied schema. Do not include historical facts or a historicalNote field.',
+      },
+      {
+        role: 'user',
+        content: `Create a mission for this app-decided input: ${JSON.stringify(input)}. Tailor tone and effort to availableMinutes and energy. The optional displayName may be used naturally. Provide a title, a briefing, encouragement for progress at 25%, 50%, and 75%, and a completionStyle. Keep every field short and concrete.`,
+      },
+    ],
+    response_format: {
+      type: 'json_schema',
+      json_schema: { name: 'hiyaku_mission_narrative', strict: true, schema: missionSchema },
+    },
+  }
+}
+
+function completionRequest(summary: CompletionSummary, rank: string): unknown {
+  return {
+    model: openAiModel,
+    messages: [
+      {
+        role: 'system',
+        content: 'You write concise, warm fictional Edo courier arrival narrative. Return only JSON matching the supplied schema. The app has already decided completion and rank; do not change or evaluate them.',
+      },
+      {
+        role: 'user',
+        content: `Write an arrival epilogue and a next-mission teaser for this completed courier run: ${JSON.stringify({ ...summary, rank })}. Explicitly weave the missionTitle and rounded distance in metres into the epilogue.`,
+      },
+    ],
+    response_format: {
+      type: 'json_schema',
+      json_schema: { name: 'hiyaku_completion_narrative', strict: true, schema: completionSchema },
+    },
+  }
+}
+
 export default {
-  async fetch(request: Request): Promise<Response> {
+  async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url)
     if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: jsonHeaders })
     if (request.method !== 'POST') return json({ error: 'Use POST for this endpoint.' }, 405)
@@ -34,14 +191,18 @@ export default {
       if (!isMissionInput(body)) {
         return json({ error: 'Invalid mission input. Expected availableMinutes (5, 10, or 15), energy, and optional displayName.' }, 400)
       }
-      return json(mockGenerateMission(body))
+      const fallback = mockGenerateMission(body)
+      const narrative = await callOpenAi(env, missionRequest(body), isNarrativeMission)
+      return json(narrative ? { ...narrative, historicalNote: fallback.historicalNote } : fallback)
     }
     if (url.pathname === '/api/complete') {
       if (!isCompletionSummary(body)) {
         return json({ error: 'Invalid completion summary. Expected numeric distanceMeters, durationSeconds, completionPercent, and string missionTitle.' }, 400)
       }
-      return json(mockCompleteMission(body))
+      const fallback = mockCompleteMission(body)
+      const narrative = await callOpenAi(env, completionRequest(body, fallback.rank), isNarrativeCompletion)
+      return json(narrative ? { ...narrative, rank: fallback.rank } : fallback)
     }
     return json({ error: 'Not found.' }, 404)
   },
-} satisfies ExportedHandler
+} satisfies ExportedHandler<Env>

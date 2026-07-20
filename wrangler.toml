@@ -1,3 +1,6 @@
 name = "hiyaku-worker-placeholder"
 main = "worker/index.ts"
 compatibility_date = "2026-07-20"
+
+# Production secret binding: run `wrangler secret put OPENAI_API_KEY` before deploy.
+# Never add OPENAI_API_KEY to this file or any committed [vars] block.

@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
-  mockCompleteMission,
-  mockGenerateMission,
+  isMission,
+  isMissionCompletion,
   type AvailableMinutes,
+  type CompletionSummary,
   type Energy,
   type Mission,
   type MissionCompletion,
@@ -17,6 +18,18 @@ interface JourneyStats {
 }
 
 const progressDistanceMetres = 480
+
+async function postApi<T>(path: string, body: MissionInput | CompletionSummary, validate: (value: unknown) => value is T): Promise<T> {
+  const response = await fetch(path, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+  if (!response.ok) throw new Error(`API request failed with ${response.status}`)
+  const value: unknown = await response.json()
+  if (!validate(value)) throw new Error('API response did not match the expected shape')
+  return value
+}
 
 function formatDuration(seconds: number): string {
   const minutes = Math.floor(seconds / 60)
@@ -258,28 +271,39 @@ export default function App() {
 
   useEffect(() => {
     if (state !== 'completing' || !mission) return
-    const finish = window.setTimeout(() => {
-      setCompletion(mockCompleteMission({
-        distanceMeters: progressDistanceMetres,
-        durationSeconds: stats.elapsedSeconds,
-        completionPercent: 100,
-        missionTitle: mission.title,
-      }))
-      setState('completed')
-    }, 500)
-    return () => window.clearTimeout(finish)
+    let cancelled = false
+    const summary: CompletionSummary = {
+      distanceMeters: progressDistanceMetres,
+      durationSeconds: stats.elapsedSeconds,
+      completionPercent: 100,
+      missionTitle: mission.title,
+    }
+    void postApi('/api/complete', summary, isMissionCompletion)
+      .then((result) => {
+        if (cancelled) return
+        setCompletion(result)
+        setState('completed')
+      })
+      .catch(() => {
+        if (cancelled) return
+        setState('idle')
+      })
+    return () => { cancelled = true }
   }, [state, mission, stats.elapsedSeconds])
 
   const activeMission = useMemo(() => mission, [mission])
 
-  const generateMission = (input: MissionInput) => {
+  const generateMission = async (input: MissionInput) => {
     setState('generating')
-    window.setTimeout(() => {
-      setMission(mockGenerateMission(input))
+    try {
+      const generatedMission = await postApi('/api/mission', input, isMission)
+      setMission(generatedMission)
       setStats({ elapsedSeconds: 0, progress: 0 })
       setCompletion(null)
       setState('ready')
-    }, 650)
+    } catch {
+      setState('idle')
+    }
   }
 
   if (state === 'idle' || state === 'generating') return <DispatchScreen onGenerate={generateMission} generating={state === 'generating'} />
