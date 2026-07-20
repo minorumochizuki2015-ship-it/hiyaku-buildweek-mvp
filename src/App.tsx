@@ -45,9 +45,12 @@ export function DispatchScreen({ onGenerate, generating }: { onGenerate: (input:
         </div>
       </header>
 
-      <section className="mission-intro" aria-label="Mission introduction">
-        <span className="seal">DEMO<br />EDO</span>
-        <p>Tell us the time and spirit you have today. We will hand you one courier mission.</p>
+      <section className="dispatch-hero" aria-label="Edo courier introduction">
+        <img src="/assets/courier-kanto-card.png" alt="Edo courier of Kanto, ready for dispatch" />
+        <div className="dispatch-hero-copy">
+          <span className="seal">DEMO<br />EDO</span>
+          <p>Tell us the time and spirit you have today. We will hand you one courier mission.</p>
+        </div>
       </section>
 
       <form
@@ -102,6 +105,8 @@ export function JourneyScreen({ mission, state, stats, onPause, onEnd }: {
 }) {
   const distance = Math.round((stats.progress / 100) * progressDistanceMetres)
   const progressLabel = state === 'ready' ? 'Mission ready' : state === 'paused' ? 'Journey paused' : state === 'completing' ? 'Writing arrival…' : 'Demo Journey'
+  const ringRadius = 84
+  const ringCircumference = 2 * Math.PI * ringRadius
 
   return (
     <main className="screen journey-screen" aria-labelledby="journey-title">
@@ -114,17 +119,23 @@ export function JourneyScreen({ mission, state, stats, onPause, onEnd }: {
       </header>
 
       <section className="journey-stage" aria-label="Courier route progress">
-        <svg className="route-ribbon" viewBox="0 0 320 260" role="img" aria-label={`${stats.progress}% along the route`}>
-          <path d="M31 222 C54 152 102 211 125 130 S196 42 217 103 S277 128 292 31" pathLength="100" />
-          <path className="route-progress" d="M31 222 C54 152 102 211 125 130 S196 42 217 103 S277 128 292 31" pathLength="100" style={{ strokeDasharray: `${stats.progress} 100` }} />
-          <circle cx="31" cy="222" r="6" />
-          <circle cx="292" cy="31" r="7" />
-        </svg>
-        <div className="courier" style={{ left: `${18 + stats.progress * 0.62}%`, top: `${67 - stats.progress * 0.48}%` }} aria-label="Courier">
-          <span className="courier-hat" />
-          <span className="courier-head" />
-          <span className="courier-body" />
-          <span className="courier-pack" />
+        <img className="route-map" src="/assets/kanto-route-map.png" alt="Illustrated Kanto route map" />
+        <div className="route-map-wash" aria-hidden="true" />
+        <div className="progress-ring" aria-label={`${stats.progress}% along the route`}>
+          <svg viewBox="0 0 200 200" role="img" aria-hidden="true">
+            <circle className="ring-track" cx="100" cy="100" r={ringRadius} />
+            <circle
+              className="ring-value"
+              cx="100"
+              cy="100"
+              r={ringRadius}
+              style={{ strokeDasharray: `${(stats.progress / 100) * ringCircumference} ${ringCircumference}` }}
+            />
+          </svg>
+          <div className="ring-copy">
+            <strong>{distance}<small>m</small></strong>
+            <span>{stats.progress}% complete</span>
+          </div>
         </div>
       </section>
 
@@ -132,10 +143,9 @@ export function JourneyScreen({ mission, state, stats, onPause, onEnd }: {
         <p>{milestoneFor(stats.progress, mission)}</p>
       </section>
 
-      <section className="metrics" aria-label="Journey metrics">
-        <div><strong>{formatDuration(stats.elapsedSeconds)}</strong><span>elapsed</span></div>
-        <div><strong>{distance}m</strong><span>distance</span></div>
-        <div><strong>{stats.progress}%</strong><span>progress</span></div>
+      <section className="journey-detail" aria-label="Journey metrics">
+        <span><strong>{formatDuration(stats.elapsedSeconds)}</strong> elapsed</span>
+        <span><strong>{Math.max(progressDistanceMetres - distance, 0)}m</strong> remaining</span>
       </section>
 
       <div className="journey-actions">
@@ -156,6 +166,7 @@ export function ArrivalScreen({ mission, completion, stats, onRestart }: {
 }) {
   const distance = Math.round((stats.progress / 100) * progressDistanceMetres)
   const [shareStatus, setShareStatus] = useState('')
+  const [mealOpen, setMealOpen] = useState(false)
   const text = `HIYAKU — ${mission.title}: ${completion.rank}. ${distance}m in ${formatDuration(stats.elapsedSeconds)}.`
 
   const share = async () => {
@@ -176,12 +187,17 @@ export function ArrivalScreen({ mission, completion, stats, onRestart }: {
 
   return (
     <main className="screen arrival-screen" aria-labelledby="arrival-title">
-      <header className="arrival-header">
-        <span className="arrival-sun" aria-hidden="true" />
-        <p className="eyebrow">ARRIVAL RECORDED</p>
-        <h1 id="arrival-title">{completion.rank}</h1>
-        <p className="arrival-kicker">Your courier run has found its door.</p>
-      </header>
+      <section className="arrival-hero">
+        <video className="arrival-video" autoPlay muted loop playsInline preload="metadata" aria-label="Golden Edo town arrival scene">
+          <source src="/assets/arrival-honjin-goze.mp4" type="video/mp4" />
+        </video>
+        <div className="arrival-video-wash" aria-hidden="true" />
+        <header className="arrival-header">
+          <p className="eyebrow">ARRIVAL RECORDED</p>
+          <h1 id="arrival-title">{completion.rank}</h1>
+          <p className="arrival-kicker">Your courier run has found its door.</p>
+        </header>
+      </section>
       <section className="arrival-stats" aria-label="Completed journey metrics">
         <div><strong>{distance}m</strong><span>distance</span></div>
         <div><strong>{formatDuration(stats.elapsedSeconds)}</strong><span>duration</span></div>
@@ -192,11 +208,26 @@ export function ArrivalScreen({ mission, completion, stats, onRestart }: {
         <p className="historical-note"><strong>From Edo:</strong> {mission.historicalNote}</p>
         <p className="next-mission">Next dispatch: {completion.nextMissionTeaser}</p>
       </section>
+      <button className="meal-button" type="button" onClick={() => setMealOpen(true)}>
+        <span aria-hidden="true">✦</span> 今日の一食 <small>Watch the courier's reward</small>
+      </button>
       <div className="arrival-actions">
         <button className="secondary-button" type="button" onClick={share}>Share Result</button>
         <button className="primary-button compact" type="button" onClick={onRestart}>Start Another Mission</button>
       </div>
       <p className="share-status" aria-live="polite">{shareStatus}</p>
+      {mealOpen && (
+        <div className="meal-modal-backdrop" role="presentation" onClick={() => setMealOpen(false)}>
+          <section className="meal-modal" role="dialog" aria-modal="true" aria-labelledby="meal-title" onClick={(event) => event.stopPropagation()}>
+            <button className="modal-close" type="button" aria-label="Close meal video" onClick={() => setMealOpen(false)}>×</button>
+            <p className="eyebrow">COURIER'S REWARD</p>
+            <h2 id="meal-title">今日の一食</h2>
+            <video autoPlay muted playsInline controls preload="none">
+              <source src="/assets/meal-reward-kanto.mp4" type="video/mp4" />
+            </video>
+          </section>
+        </div>
+      )}
     </main>
   )
 }
