@@ -1,6 +1,6 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it, vi } from 'vitest'
-import { AppShell, ArrivalScreen, DispatchScreen, JourneyScreen, LanguageToggle, journeyStateAfterAccept, nutritionStateFor, shouldDismissGoyoHelp } from './App'
+import { AppShell, ArrivalScreen, DispatchScreen, GoyoTabContent, JourneyScreen, LanguageToggle, journeyStateAfterAccept, nutritionStateFor, shouldDismissGoyoHelp } from './App'
 import { checkpointRouteState } from './checkpointRoute'
 import { distanceTargetMetres, haversineDistanceMetres, rivalDistanceAtElapsedSeconds, rivalPaceMultiplier, startWalkTracking } from './movement'
 import { buildSealSummary, formatSealDate, sealCanvasDataUrl } from './ArrivalSeal'
@@ -24,11 +24,11 @@ describe('HIKYAKU static screens', () => {
         totalScore={0}
         mikotoQuote={{ en: MIKOTO.normalQuote, ja: MIKOTO.normalQuote }}
         locale="en"
-        onAcceptDuty={() => undefined}
+        onOpenGoyo={() => undefined}
       />,
     )
     const workout = renderToStaticMarkup(<WorkoutEntryScreen duty={null} onSubmit={() => undefined} onBack={() => undefined} generating={false} locale="en" />)
-    const goyo = renderToStaticMarkup(<GoyoDetailScreen duty={null} checkpoints={[]} goals={[]} townEffects={[]} mikotoQuote={null} locale="en" onAccept={() => undefined} onBack={() => undefined} />)
+    const goyo = renderToStaticMarkup(<GoyoDetailScreen duty={{ name: { en: mission.title, ja: mission.title }, description: { en: mission.briefing, ja: mission.briefing } }} checkpoints={[]} goals={[]} townEffects={[]} mikotoQuote={null} locale="en" onAccept={() => undefined} onBack={() => undefined} />)
 
     for (const screen of [town, workout, goyo]) expect(screen).not.toContain('placeholder-screen')
     expect(town).toContain('town-home')
@@ -52,6 +52,34 @@ describe('HIKYAKU static screens', () => {
     expect(screen).toContain(MIKOTO.role)
     expect(screen).toContain(MIKOTO.normalQuote)
     expect(screen).not.toContain('星図ノ測姫・忠敬')
+  })
+
+  it('renders exactly one Goyo-tab screen: Dispatch before issuance and detail after issuance', () => {
+    const commonProps = {
+      checkpoints: [],
+      goals: [],
+      townEffects: [],
+      mikotoQuote: null,
+      locale: 'en' as const,
+      onAccept: () => undefined,
+      onBack: () => undefined,
+      onGenerate: () => undefined,
+      generating: false,
+    }
+    const noDuty = renderToStaticMarkup(<GoyoTabContent {...commonProps} duty={null} />)
+    const issuedDuty = renderToStaticMarkup(
+      <GoyoTabContent
+        {...commonProps}
+        duty={{ name: { en: mission.title, ja: mission.title }, description: { en: mission.briefing, ja: mission.briefing } }}
+      />,
+    )
+
+    expect(noDuty).toContain('class="screen dispatch-screen"')
+    expect(noDuty).not.toContain('class="goyo-detail"')
+    expect((noDuty.match(/<main /g) ?? [])).toHaveLength(1)
+    expect(issuedDuty).toContain('class="goyo-detail"')
+    expect(issuedDuty).not.toContain('class="screen dispatch-screen"')
+    expect((issuedDuty.match(/<main /g) ?? [])).toHaveLength(1)
   })
 
   it('renders Journey and its primary action', () => {

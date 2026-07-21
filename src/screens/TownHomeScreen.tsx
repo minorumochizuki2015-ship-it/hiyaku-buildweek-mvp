@@ -27,20 +27,22 @@ export interface TownHomeParameter {
   value: string | number
 }
 
+export interface TownHomeDuty {
+  name: LocalizedTownHomeText
+  description: LocalizedTownHomeText
+  distanceMetres: number
+  estimatedMinutes: number
+  townEffects: readonly TownHomeEffect[]
+}
+
 export interface TownHomeScreenProps {
-  duty: {
-    name: LocalizedTownHomeText
-    description: LocalizedTownHomeText
-    distanceMetres: number
-    estimatedMinutes: number
-    townEffects: readonly TownHomeEffect[]
-  }
+  duty: TownHomeDuty | null
   goals: readonly TownHomeGoal[]
   townParams: readonly TownHomeParameter[]
   totalScore: number
   mikotoQuote: LocalizedTownHomeText
   locale: TownHomeLocale
-  onAcceptDuty: () => void
+  onOpenGoyo: () => void
 }
 
 interface LocalizedCopy {
@@ -53,6 +55,8 @@ const copy = {
   todayGoyo: { en: 'Today’s Goyo', ja: '本日の御用' },
   townEffects: { en: 'Town impact', ja: '町への効き' },
   acceptGoyo: { en: 'Accept Goyo', ja: '御用を承る' },
+  noDuty: { en: 'No duty yet. Accept one from Goyo.', ja: '御用はまだありません。御用から受けましょう。' },
+  openGoyo: { en: 'Go to Goyo', ja: '御用へ行く' },
   todayGoals: { en: 'Today’s Goyo', ja: '今日の御用' },
   minutes: { en: 'min', ja: '分' },
   townImage: { en: 'Night street in town', ja: '夜の町並み' },
@@ -72,7 +76,7 @@ function formatDistance(distanceMetres: number, locale: TownHomeLocale): string 
   return locale === 'ja' ? `${distanceMetres}m` : `${distanceMetres} m`
 }
 
-export function TownHomeScreen({ duty, goals, townParams, totalScore, mikotoQuote, locale, onAcceptDuty }: TownHomeScreenProps) {
+export function TownHomeScreen({ duty, goals, townParams, totalScore, mikotoQuote, locale, onOpenGoyo }: TownHomeScreenProps) {
   const completedGoals = goals.filter((goal) => goal.done).length
 
   return (
@@ -90,31 +94,40 @@ export function TownHomeScreen({ duty, goals, townParams, totalScore, mikotoQuot
           <h1 id="town-home-duty-title">{text(copy.todayGoyo, locale)}</h1>
         </header>
         <div className="town-home__panel-body">
-          <div className="town-home__mission">
-            <span className="town-home__fuda" aria-hidden="true">{locale === 'ja' ? '御用' : 'GOYO'}</span>
-            <div className="town-home__mission-copy">
-              <strong>{text(duty.name, locale)}</strong>
-              <span>{text(duty.description, locale)}</span>
-              <span className="town-home__distance">{formatDistance(duty.distanceMetres, locale)}</span>
-            </div>
-          </div>
+          {duty ? (
+            <>
+              <div className="town-home__mission">
+                <span className="town-home__fuda" aria-hidden="true">{locale === 'ja' ? '御用' : 'GOYO'}</span>
+                <div className="town-home__mission-copy">
+                  <strong>{text(duty.name, locale)}</strong>
+                  <span>{text(duty.description, locale)}</span>
+                  <span className="town-home__distance">{formatDistance(duty.distanceMetres, locale)}</span>
+                </div>
+              </div>
 
-          <div className="town-home__effects" aria-label={text(copy.townEffects, locale)}>
-            <span className="town-home__effects-label">{text(copy.townEffects, locale)}</span>
-            {duty.townEffects.map((effect) => (
-              <span className="town-home__effect" key={effect.key}>
-                <span>{text(effect.label, locale)}</span>
-                <strong>{effect.value}</strong>
-              </span>
-            ))}
-            <span className="town-home__effect">
-              <strong>{duty.estimatedMinutes} {text(copy.minutes, locale)}</strong>
-            </span>
-          </div>
+              <div className="town-home__effects" aria-label={text(copy.townEffects, locale)}>
+                <span className="town-home__effects-label">{text(copy.townEffects, locale)}</span>
+                {duty.townEffects.map((effect) => (
+                  <span className="town-home__effect" key={effect.key}>
+                    <span>{text(effect.label, locale)}</span>
+                    <strong>{effect.value}</strong>
+                  </span>
+                ))}
+                <span className="town-home__effect">
+                  <strong>{duty.estimatedMinutes} {text(copy.minutes, locale)}</strong>
+                </span>
+              </div>
 
-          <button className="town-home__accept" type="button" onClick={onAcceptDuty} aria-label={text(copy.acceptGoyo, locale)}>
-            {text(copy.acceptGoyo, locale)} <span aria-hidden="true">›</span>
-          </button>
+              <button className="town-home__accept" type="button" onClick={onOpenGoyo} aria-label={text(copy.acceptGoyo, locale)}>
+                {text(copy.acceptGoyo, locale)} <span aria-hidden="true">›</span>
+              </button>
+            </>
+          ) : (
+            <section className="town-home__empty-duty" aria-label={text(copy.todayGoyo, locale)}>
+              <p>{text(copy.noDuty, locale)}</p>
+              <button className="town-home__accept" type="button" onClick={onOpenGoyo}>{text(copy.openGoyo, locale)} <span aria-hidden="true">›</span></button>
+            </section>
+          )}
 
           {goals.length > 0 && (
             <section className="town-home__goals" aria-labelledby="town-home-goals-title">
@@ -150,16 +163,14 @@ export function TownHomeScreen({ duty, goals, townParams, totalScore, mikotoQuot
         <p className="town-home__quote">{text(mikotoQuote, locale)}</p>
       </section>
 
-      {townParams.length > 0 && (
-        <dl className="town-home__params">
-          {townParams.map((parameter) => (
-            <div className="town-home__param" key={parameter.key}>
-              <dt>{text(parameter.label, locale)}</dt>
-              <dd>{parameter.value}</dd>
-            </div>
-          ))}
-        </dl>
-      )}
+      <dl className="town-home__params" aria-label={locale === 'ja' ? '町の指標' : 'Town parameters'}>
+        {townParams.map((parameter) => (
+          <div className="town-home__param" key={parameter.key}>
+            <dt>{text(parameter.label, locale)}</dt>
+            <dd>{parameter.value}</dd>
+          </div>
+        ))}
+      </dl>
     </main>
   )
 }

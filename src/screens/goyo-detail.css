@@ -131,11 +131,6 @@
 .goyo-detail__accept-button { border: 1px solid #a784ef; background: linear-gradient(#8d6df0, #6f4fd6); box-shadow: 0 4px 13px rgb(124 92 255 / 32%); color: #fff; }
 .goyo-detail__ghost-button { border: 1px solid rgb(247 242 232 / 29%); background: transparent; color: #f7f2e8; }
 
-.goyo-detail__empty { display: grid; min-height: 320px; padding: 24px 18px; place-content: center; justify-items: center; border: 1px solid rgb(244 185 66 / 36%); border-radius: 11px; background: linear-gradient(160deg, rgb(156 120 255 / 12%), rgb(12 16 34 / 48%)); text-align: center; }
-.goyo-detail__empty > span { margin-bottom: 10px; color: #f7d98a; font-family: Georgia, serif; font-size: 2rem; }
-.goyo-detail__empty h2 { margin: 0; color: #fff1c7; font-family: Georgia, "Hiragino Mincho ProN", serif; font-size: 1rem; }
-.goyo-detail__empty p { margin: 7px 0 18px; color: #c9c0de; font-size: .69rem; line-height: 1.5; }
-
 .goyo-detail :focus-visible { outline: 3px solid #f6e3ac; outline-offset: 3px; }
 
 @media (prefers-reduced-motion: reduce) {

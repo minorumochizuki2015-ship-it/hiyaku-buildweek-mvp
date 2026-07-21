@@ -53,13 +53,12 @@ describe('GoyoDetailScreen', () => {
     expect(screen).toContain('width:25%')
   })
 
-  it('renders a genuine empty state without a fabricated duty or accept action', () => {
-    const screen = renderToStaticMarkup(<GoyoDetailScreen {...props} duty={null} />)
+  it('requires a supplied duty for the detail screen', () => {
+    const screen = renderToStaticMarkup(<GoyoDetailScreen {...props} />)
 
-    expect(screen).toContain('No duty has been issued yet')
-    expect(screen).toContain('Return to town')
-    expect(screen).not.toContain('Accept Goyo')
-    expect(screen).not.toContain('Carry the sealed letter')
+    expect(screen).toContain('Carry the sealed letter')
+    expect(screen).toContain('Accept Goyo')
+    expect(screen).not.toContain('No duty has been issued yet')
   })
 
   it('switches every local label and supplied value to Japanese', () => {

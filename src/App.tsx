@@ -17,7 +17,7 @@ import { ArrivalSeal, buildSealSummary, formatSealDate, sealCanvasDataUrl, type 
 import { NutritionFlow } from './nutrition/NutritionFlow'
 import { TownHomeScreen, type TownHomeGoal, type TownHomeParameter } from './screens/TownHomeScreen'
 import { WorkoutEntryScreen } from './screens/WorkoutEntryScreen'
-import { GoyoDetailScreen, type GoyoCheckpoint, type GoyoGoal, type GoyoTownEffect } from './screens/GoyoDetailScreen'
+import { GoyoDetailScreen, type GoyoCheckpoint, type GoyoDuty, type GoyoGoal, type GoyoTownEffect } from './screens/GoyoDetailScreen'
 import type { NutritionReport } from '../shared/nutrition'
 import { localizeContent, t, type Locale } from './i18n'
 
@@ -155,10 +155,6 @@ export function ComingSoonScreen({ tab, locale, onReturnToDispatch }: { tab: Exc
       </section>
     </main>
   )
-}
-
-function TownEmptyState() {
-  return <main className="town-home" aria-label="—">—</main>
 }
 
 async function postApi<T>(path: string, body: MissionInput | CompletionSummary, validate: (value: unknown) => value is T): Promise<T> {
@@ -322,6 +318,37 @@ export function DispatchScreen({ onGenerate, generating }: { onGenerate: (input:
         </button>
       </form>
     </main>
+  )
+}
+
+export interface GoyoTabContentProps {
+  duty: GoyoDuty | null
+  checkpoints: readonly GoyoCheckpoint[]
+  goals: readonly GoyoGoal[]
+  townEffects: readonly GoyoTownEffect[]
+  mikotoQuote: { en: string; ja: string } | null
+  locale: Locale
+  onAccept: () => void
+  onBack: () => void
+  onGenerate: (input: MissionInput, movementMode: MovementMode) => void
+  generating: boolean
+}
+
+/** The Goyo tab is either the duty detail or its creation form, never both. */
+export function GoyoTabContent({ duty, checkpoints, goals, townEffects, mikotoQuote, locale, onAccept, onBack, onGenerate, generating }: GoyoTabContentProps) {
+  if (!duty) return <DispatchScreen onGenerate={onGenerate} generating={generating} />
+
+  return (
+    <GoyoDetailScreen
+      duty={duty}
+      checkpoints={checkpoints}
+      goals={goals}
+      townEffects={townEffects}
+      mikotoQuote={mikotoQuote}
+      locale={locale}
+      onAccept={onAccept}
+      onBack={onBack}
+    />
   )
 }
 
@@ -695,29 +722,13 @@ export default function App() {
   let content: ReactNode
 
   if (selectedTab === 'town') {
-    content = townDuty
-      ? <TownHomeScreen duty={townDuty} goals={goals} townParams={townParams} totalScore={currentTotalScore} mikotoQuote={mikotoQuote} locale={locale} onAcceptDuty={() => setSelectedTab('workout')} />
-      : <TownEmptyState />
+    content = <TownHomeScreen duty={townDuty} goals={goals} townParams={townParams} totalScore={currentTotalScore} mikotoQuote={mikotoQuote} locale={locale} onOpenGoyo={() => setSelectedTab('dispatch')} />
   } else if (selectedTab === 'workout') {
     content = <WorkoutEntryScreen duty={null} onSubmit={generateMission} onBack={() => setSelectedTab('dispatch')} generating={state === 'generating'} locale={locale} />
   } else if (selectedTab === 'flags' || selectedTab === 'records') {
     content = <ComingSoonScreen tab={selectedTab} locale={locale} onReturnToDispatch={() => setSelectedTab('dispatch')} />
   } else if (state === 'idle' || state === 'generating' || state === 'duty-issued') {
-    content = (
-      <>
-        <GoyoDetailScreen
-          duty={goyoDuty}
-          checkpoints={goyoCheckpoints}
-          goals={goyoGoals}
-          townEffects={goyoTownEffects}
-          mikotoQuote={goyoDuty ? mikotoQuote : null}
-          locale={locale}
-          onAccept={() => setState(nutritionStateFor('dispatch'))}
-          onBack={() => setSelectedTab('town')}
-        />
-        {!goyoDuty && <DispatchScreen onGenerate={generateMission} generating={state === 'generating'} />}
-      </>
-    )
+    content = <GoyoTabContent duty={goyoDuty} checkpoints={goyoCheckpoints} goals={goyoGoals} townEffects={goyoTownEffects} mikotoQuote={goyoDuty ? mikotoQuote : null} locale={locale} onAccept={() => setState(nutritionStateFor('dispatch'))} onBack={() => setSelectedTab('town')} onGenerate={generateMission} generating={state === 'generating'} />
   } else if (state === 'nutrition-before-journey') {
     content = <NutritionFlow onBack={() => setState('idle')} backLabel="Dispatch" onContinue={() => setState('ready')} locale={locale} distanceMetres={undefined} elapsedSeconds={undefined} previousFoodScore={latestNutritionReport?.foodScore ?? 0} onReport={setLatestNutritionReport} />
   } else if (missionInProgress && activeMission) {

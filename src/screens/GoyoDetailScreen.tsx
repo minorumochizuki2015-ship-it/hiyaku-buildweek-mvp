@@ -36,7 +36,7 @@ export interface GoyoTownEffect {
 }
 
 export interface GoyoDetailScreenProps {
-  duty: GoyoDuty | null
+  duty: GoyoDuty
   checkpoints: readonly GoyoCheckpoint[]
   goals: readonly GoyoGoal[]
   townEffects: readonly GoyoTownEffect[]
@@ -66,8 +66,6 @@ const copy = {
   mikoto: { en: 'Mikoto · Official courier', ja: 'ミコト・御用飛脚' },
   accept: { en: 'Accept Goyo ›', ja: '御用を承る ›' },
   returnToTown: { en: 'Return to town', ja: '町へ戻る' },
-  emptyTitle: { en: 'No duty has been issued yet', ja: '御用はまだ発行されていません' },
-  emptyCopy: { en: 'Return to town and wait for an official duty to arrive.', ja: '町へ戻り、公の御用が届くのをお待ちください。' },
 } as const satisfies Record<string, GoyoLocalizedText>
 
 function text(value: GoyoLocalizedText, locale: GoyoLocale): string {
@@ -123,15 +121,6 @@ export function GoyoDetailScreen({
 
       {helpOpen && <p className="goyo-detail__help" id="goyo-detail-help" role="status">{text(copy.helpText, locale)}</p>}
 
-      {!duty ? (
-        <section className="goyo-detail__empty" aria-labelledby="goyo-detail-empty-title">
-          <span aria-hidden="true">〆</span>
-          <h2 id="goyo-detail-empty-title">{text(copy.emptyTitle, locale)}</h2>
-          <p>{text(copy.emptyCopy, locale)}</p>
-          <button className="goyo-detail__ghost-button" type="button" onClick={onBack}>{text(copy.returnToTown, locale)}</button>
-        </section>
-      ) : (
-        <>
           <section className="goyo-detail__contract" aria-labelledby="goyo-detail-duty-title">
             <div className="goyo-detail__contract-heading">
               <span className="goyo-detail__fuda" aria-hidden="true">{text(copy.fuda, locale)}</span>
@@ -217,8 +206,6 @@ export function GoyoDetailScreen({
             <button className="goyo-detail__accept-button" type="button" onClick={onAccept}>{text(copy.accept, locale)}</button>
             <button className="goyo-detail__ghost-button" type="button" onClick={onBack}>{text(copy.returnToTown, locale)}</button>
           </footer>
-        </>
-      )}
     </main>
   )
 }

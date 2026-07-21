@@ -28,7 +28,7 @@ export const SAMPLE_TOWN_HOME_PROPS: TownHomeScreenProps = {
   totalScore: 845,
   mikotoQuote: { en: 'Let us check today’s duty.', ja: '本日の御用、確認いたしましょう。' },
   locale: 'en',
-  onAcceptDuty: () => undefined,
+  onOpenGoyo: () => undefined,
 }
 
 function findAcceptButton(node: ReactNode): ReactElement<{ onClick?: () => void }> | undefined {
@@ -66,12 +66,37 @@ describe('TownHomeScreen', () => {
   })
 
   it('wires the primary button to the caller callback', () => {
-    const onAcceptDuty = vi.fn()
-    const button = findAcceptButton(TownHomeScreen({ ...SAMPLE_TOWN_HOME_PROPS, onAcceptDuty }))
+    const onOpenGoyo = vi.fn()
+    const button = findAcceptButton(TownHomeScreen({ ...SAMPLE_TOWN_HOME_PROPS, onOpenGoyo }))
 
     expect(button).toBeDefined()
     button?.props.onClick?.()
-    expect(onAcceptDuty).toHaveBeenCalledTimes(1)
+    expect(onOpenGoyo).toHaveBeenCalledTimes(1)
+  })
+
+  it('renders the measured zero parameter strip and a Goyo action when no duty exists', () => {
+    const screen = renderToStaticMarkup(
+      <TownHomeScreen
+        {...SAMPLE_TOWN_HOME_PROPS}
+        duty={null}
+        goals={[
+          { key: 'carry-goyo', label: { en: 'Carry the goyo', ja: '御用を運ぶ' }, current: 0, target: 1, done: false },
+          { key: 'log-meal', label: { en: 'Log a meal', ja: '食事を記録する' }, current: 0, target: 1, done: false },
+        ]}
+        townParams={[
+          { key: 'vitality', label: { en: 'Town vitality', ja: '町の活気' }, value: 0 },
+          { key: 'food-hall', label: { en: 'Food hall', ja: '食堂' }, value: 0 },
+          { key: 'courier-flag', label: { en: 'Courier flag power', ja: '飛脚旗の力' }, value: 0 },
+        ]}
+      />,
+    )
+
+    expect(screen).toContain('class="town-home__params"')
+    expect((screen.match(/<dd>0<\/dd>/g) ?? [])).toHaveLength(3)
+    expect(screen).toContain('No duty yet. Accept one from Goyo.')
+    expect(screen).toContain('Go to Goyo')
+    expect(screen).toContain('0/1')
+    expect(screen).toContain('src="/assets/bg-town-night-street.png"')
   })
 
   it('omits the folded goal strip when the caller has no goals', () => {
