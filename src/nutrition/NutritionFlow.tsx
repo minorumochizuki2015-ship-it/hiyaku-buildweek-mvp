@@ -1,5 +1,6 @@
 import { useReducer, useState, type FormEvent } from 'react'
 import {
+  foodScoreFor,
   isNutritionReport,
   judgeGap,
   NUTRIENT_DEFINITIONS,
@@ -85,13 +86,6 @@ function roundAmount(value: number): number {
   return Math.round(value * 10) / 10
 }
 
-function nutritionCredit(amount: number, perMealReference: number): number {
-  const ratio = amount / perMealReference
-  if (ratio >= 0.85 && ratio <= 1.15) return 1
-  if (ratio < 0.85) return Math.max(0, ratio / 0.85)
-  return Math.max(0, 1 - (ratio - 1.15) / (2 * 0.85))
-}
-
 /** Mirrors the Worker’s deterministic fallback values when its local proxy is unavailable. */
 export function localNutritionReport(description: string, amountGrams: number, locale: Locale): NutritionReport {
   const nutrients = NUTRIENT_DEFINITIONS.map((definition) => {
@@ -103,18 +97,13 @@ export function localNutritionReport(description: string, amountGrams: number, l
       judgment: judgeGap(amount, perMealReferenceValue(definition, 'japan')),
     }
   })
-  const foodScore = Math.round(100 * nutrients.reduce(
-    (total, nutrient) => total + nutritionCredit(nutrient.amount, perMealReferenceValue(NUTRIENT_DEFINITIONS.find((definition) => definition.key === nutrient.key)!, 'japan')),
-    0,
-  ) / NUTRIENT_DEFINITIONS.length)
-
   return {
     description: description.trim(),
     amountGrams,
     productName: null,
     source: 'deterministic-fallback',
     nutrients,
-    foodScore,
+    foodScore: foodScoreFor(Object.fromEntries(nutrients.map((nutrient) => [nutrient.key, nutrient.amount])) as Record<NutrientKey, number>),
     aiAttempt: { status: 'failed', estimatedCount: 0, reason: t(locale, 'offline.nutrition') },
   }
 }

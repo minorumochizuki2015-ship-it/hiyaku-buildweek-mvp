@@ -34,10 +34,10 @@ describe('GozenLedgerScreen', () => {
   it('derives achieved nutrients and mixed sources from the report nutrients', () => {
     const screen = renderToStaticMarkup(<GozenLedgerScreen report={report} distanceMetres={840} elapsedSeconds={25} locale="ja" />)
 
-    expect(screen).toContain('4 / 6')
+    expect(screen).toContain('>0</dd>')
     expect(screen).toContain('複合ソース')
     expect(screen).toContain('GPT-5.6が6項目中2項目を推定')
-    expect(screen).toContain('整え札')
+    expect(screen).toContain('力飯値')
   })
 
   it('shows the one logged item instead of invented meal slots', () => {
@@ -60,9 +60,9 @@ describe('GozenLedgerScreen', () => {
     const english = renderToStaticMarkup(<GozenLedgerScreen report={report} distanceMetres={840} elapsedSeconds={25} locale="en" />)
 
     expect(japanese).toContain('御膳帳 Premium')
-    expect(japanese).toContain('今日の食事スコア')
+    expect(japanese).toContain('食品の貢献スコア')
     expect(english).toContain('Premium Meal Ledger')
-    expect(english).toContain('Today’s meal score')
+    expect(english).toContain('Item contribution score')
     expect(english).toContain('Distance')
     expect(english).toContain('Duration')
     expect(english).toContain('GPT-5.6 estimated 2 of 6 values')

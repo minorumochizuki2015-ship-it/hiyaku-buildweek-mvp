@@ -16,10 +16,10 @@ const copy = {
     subtitle: '今日の食事と町の様子',
     calendar: '暦',
     calendarLabel: '今日の暦',
-    scoreTitle: '今日の食事スコア',
+    scoreTitle: '食品の貢献スコア',
     accuracy: '記録精度',
     high: '高',
-    achievements: '栄養達成数',
+    achievements: '多めの量',
     source: '情報ソース',
     town: '町への反映',
     good: '良好',
@@ -34,11 +34,11 @@ const copy = {
     duration: '所要時間',
     recovery: '回復提案',
     recoveryCopy: '巡行のあとは、しっかり休息とたんぱく質を意識しましょう。',
-    goodTitle: '今日よかったところ',
-    lowTitle: '少なめかもしれない栄養',
-    goodCopy: (nutrients: string) => `${nutrients}が、記録上しっかり整っています。`,
-    lowCopy: (nutrients: string) => `${nutrients}が、記録上少なめかもしれません。`,
-    noLow: '大きく少なめの栄養は、記録上見当たりません。',
+    goodTitle: 'この食品の記録',
+    lowTitle: '注目する量',
+    goodCopy: (nutrients: string) => `${nutrients}の量を記録しました。`,
+    lowCopy: (nutrients: string) => `${nutrients}は1食の目安に対して多めです。`,
+    noLow: '1食の目安の2倍を超える量はありません。',
     measured: '実測',
     ai: 'AI推定',
     category: 'カテゴリ推定',
@@ -55,10 +55,10 @@ const copy = {
     subtitle: 'Today’s meals and the town',
     calendar: 'Calendar',
     calendarLabel: 'Today’s calendar',
-    scoreTitle: 'Today’s meal score',
+    scoreTitle: 'Item contribution score',
     accuracy: 'Record accuracy',
     high: 'High',
-    achievements: 'Nutrition goals',
+    achievements: 'Notable amounts',
     source: 'Data source',
     town: 'Town effect',
     good: 'Good',
@@ -73,11 +73,11 @@ const copy = {
     duration: 'Duration',
     recovery: 'Recovery suggestion',
     recoveryCopy: 'After your rounds, rest well and keep protein in mind.',
-    goodTitle: 'What went well today',
-    lowTitle: 'Nutrients that may be low',
-    goodCopy: (nutrients: string) => `${nutrients} are well balanced in this record.`,
-    lowCopy: (nutrients: string) => `${nutrients} may be low in this record.`,
-    noLow: 'No nutrients look notably low in this record.',
+    goodTitle: 'This item’s record',
+    lowTitle: 'Notable amounts',
+    goodCopy: (nutrients: string) => `Recorded amounts include ${nutrients}.`,
+    lowCopy: (nutrients: string) => `${nutrients} are more than twice the per-meal guide.`,
+    noLow: 'No amount is more than twice the per-meal guide.',
     measured: 'Measured',
     ai: 'AI estimate',
     category: 'Category estimate',
@@ -142,9 +142,8 @@ export function formatJourneyDuration(elapsedSeconds: number | undefined): strin
 
 export function GozenLedgerScreen({ report, distanceMetres, elapsedSeconds, locale }: GozenLedgerScreenProps) {
   const labels = copy[locale]
-  const achieved = report.nutrients.filter((nutrient) => nutrient.judgment === 'OK').length
-  const lowNutrients = nutrientNames(report.nutrients, 'Low', locale)
-  const goodNutrients = nutrientNames(report.nutrients, 'OK', locale)
+  const notableNutrients = nutrientNames(report.nutrients, 'High', locale)
+  const recordedNutrients = nutrientNames(report.nutrients, 'OK', locale)
   const townState = report.foodScore >= 70 ? labels.good : labels.steady
   const scoreStyle = { '--g07-score': `${report.foodScore}%` } as React.CSSProperties
 
@@ -166,7 +165,7 @@ export function GozenLedgerScreen({ report, distanceMetres, elapsedSeconds, loca
           </div>
           <dl className="g07-key-values">
             <div><dt>{labels.accuracy}</dt><dd className="g07-pill g07-pill-ok">{labels.high}</dd></div>
-            <div><dt>{labels.achievements}</dt><dd className="g07-pill g07-pill-gold">{achieved} / {NUTRIENT_DEFINITIONS.length}</dd></div>
+            <div><dt>{labels.achievements}</dt><dd className="g07-pill g07-pill-gold">{report.nutrients.filter((nutrient) => nutrient.judgment === 'High').length}</dd></div>
             <div>
               <dt>{labels.source}</dt>
               <dd className="g07-ai-source-status">
@@ -208,11 +207,11 @@ export function GozenLedgerScreen({ report, distanceMetres, elapsedSeconds, loca
       <div className="g07-two-up">
         <section className="g07-mini-card" aria-labelledby="g07-good-title">
           <h2 id="g07-good-title">{labels.goodTitle}</h2>
-          <p>{labels.goodCopy(goodNutrients || (locale === 'ja' ? '栄養の記録' : 'Nutrient records'))}</p>
+          <p>{labels.goodCopy(recordedNutrients || (locale === 'ja' ? '栄養の記録' : 'Nutrient records'))}</p>
         </section>
         <section className="g07-mini-card" aria-labelledby="g07-low-title">
           <h2 id="g07-low-title">{labels.lowTitle}</h2>
-          <p>{lowNutrients ? labels.lowCopy(lowNutrients) : labels.noLow}</p>
+          <p>{notableNutrients ? labels.lowCopy(notableNutrients) : labels.noLow}</p>
         </section>
       </div>
     </main>

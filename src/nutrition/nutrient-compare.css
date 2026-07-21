@@ -109,11 +109,12 @@
   border-bottom: 0;
 }
 
-.g07-nutrient-table th:nth-child(1) { width: 23%; }
-.g07-nutrient-table th:nth-child(2) { width: 20%; }
-.g07-nutrient-table th:nth-child(3) { width: 20%; }
-.g07-nutrient-table th:nth-child(4) { width: 19%; }
-.g07-nutrient-table th:nth-child(5) { width: 18%; }
+.g07-nutrient-table th:nth-child(1) { width: 21%; }
+.g07-nutrient-table th:nth-child(2) { width: 16%; }
+.g07-nutrient-table th:nth-child(3) { width: 17%; }
+.g07-nutrient-table th:nth-child(4) { width: 12%; }
+.g07-nutrient-table th:nth-child(5) { width: 17%; }
+.g07-nutrient-table th:nth-child(6) { width: 17%; }
 
 .g07-nutrient-name > span {
   display: block;
@@ -149,7 +150,6 @@
   color: #8fe0b6;
 }
 
-.g07-status-low,
 .g07-status-high {
   border: 1px solid rgb(226 154 66 / 58%);
   background: rgb(226 154 66 / 22%);

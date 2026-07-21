@@ -12,24 +12,20 @@ export const NUTRITION_STANDARD_LABELS: Record<NutritionStandard, string> = {
   international: 'International',
 }
 
-// A logged food is evaluated against a substantial meal, rather than an equal
-// third of the daily total. This keeps an ordinary single meal from being
-// treated as excessive solely because daily guidance was split too narrowly.
-export const SINGLE_ITEM_DAILY_REFERENCE_FRACTION = 0.6
-
 export interface NutrientDefinition {
   key: NutrientKey
   label: string
   edoLabel: string
   offField: string
   unit: 'kcal' | 'g'
-  // Daily guidance used by the Worker’s Japan-default meal scoring.
+  // One-meal guide used by the Worker's Japan-default contribution score.
   referenceValue: number
-  // Daily guidance for each selectable comparison standard.
+  // One-meal guides for each selectable comparison standard.
   referenceValues: Record<NutritionStandard, number>
 }
 
-// Daily guidance values; the comparison UI and scoring derive one shared meal guide.
+// These are already one-meal guides. The non-Japan values correspond to about
+// one third of their source daily references; do not divide them again.
 export const NUTRIENT_DEFINITIONS: readonly NutrientDefinition[] = [
   { key: 'energy', label: 'Energy', edoLabel: '力飯値', offField: 'energy-kcal_100g', unit: 'kcal', referenceValue: 700, referenceValues: { japan: 700, fda: 666.7, eu: 666.7, international: 666.7 } },
   { key: 'protein', label: 'Protein', edoLabel: '御力札', offField: 'proteins_100g', unit: 'g', referenceValue: 20, referenceValues: { japan: 20, fda: 16.7, eu: 16.7, international: 16.7 } },
@@ -41,13 +37,41 @@ export const NUTRIENT_DEFINITIONS: readonly NutrientDefinition[] = [
 ] as const
 
 export function perMealReferenceValue(definition: NutrientDefinition, standard: NutritionStandard): number {
-  return definition.referenceValues[standard] * SINGLE_ITEM_DAILY_REFERENCE_FRACTION
+  return definition.referenceValues[standard]
 }
 
 export function judgeGap(estimated: number, perMealReference: number): GapJudgment {
-  if (estimated < 0.85 * perMealReference) return 'Low'
-  if (estimated > 1.15 * perMealReference) return 'High'
+  // A single ingredient is not expected to complete a meal. Only call out a
+  // notably large amount; absence of a nutrient is contribution information,
+  // not a deficiency verdict.
+  if (estimated > 2 * perMealReference) return 'High'
   return 'OK'
+}
+
+export function contributionPercent(amount: number, perMealReference: number): number {
+  if (perMealReference <= 0) return 0
+  return Math.round((amount / perMealReference) * 100)
+}
+
+const contributionScoreWeights: Readonly<Partial<Record<NutrientKey, number>>> = {
+  energy: 0.2,
+  protein: 0.35,
+  fat: 0.1,
+  carbohydrates: 0.1,
+  fiber: 0.25,
+}
+
+/** Scores a logged item by its capped contributions to the Japan meal guides. */
+export function foodScoreFor(amounts: Readonly<Record<NutrientKey, number>>): number {
+  const weightedContribution = NUTRIENT_DEFINITIONS.reduce((total, nutrient) => {
+    const weight = contributionScoreWeights[nutrient.key] ?? 0
+    const contribution = Math.min(amounts[nutrient.key] / perMealReferenceValue(nutrient, 'japan'), 1)
+    return total + weight * Math.max(0, contribution)
+  }, 0)
+
+  // Sodium is displayed as a contribution and may receive a notable-amount
+  // pill, but it is not a score target where more should earn more credit.
+  return Math.round(100 * weightedContribution)
 }
 
 export interface NutritionRequest {
