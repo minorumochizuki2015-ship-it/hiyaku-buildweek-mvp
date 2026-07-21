@@ -38,8 +38,10 @@ describe('TownGrowth', () => {
     const screen = renderToStaticMarkup(<TownGrowth food={0} run={0} total={0} locale="en" />)
 
     expect(TOWN_BUILDING_PLACEMENTS).toHaveLength(8)
-    expect(TOWN_BUILDING_PLACEMENTS.map((placement) => placement.id)).toEqual([
-      'honjin', 'dojo', 'teaHouse', 'insatsujo', 'koen', 'yatai', 'streetStage', 'foodHall',
+    // Order follows the lots measured from the painted base (top of the district
+    // down), so assert membership rather than a sequence that art can reshuffle.
+    expect([...TOWN_BUILDING_PLACEMENTS].map((placement) => placement.id).sort()).toEqual([
+      'dojo', 'foodHall', 'honjin', 'insatsujo', 'koen', 'streetStage', 'teaHouse', 'yatai',
     ])
     for (const placement of TOWN_BUILDING_PLACEMENTS) {
       expect(screen).toContain(`left:${placement.leftPercent}%`)

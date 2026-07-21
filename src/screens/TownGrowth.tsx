@@ -27,15 +27,31 @@ export interface TownBuildingPlacement {
  * The sole map of building positions on the approved 506 × 900 district base.
  * Each cut-out is bottom-centre anchored at its left/bottom point.
  */
+// The painted base is a district of EMPTY LOTS — paths, water and trees around
+// eight bare plots waiting for buildings. These placements are measured from the
+// artwork, not eyeballed: each lot's warm flat area was isolated by hue/saturation
+// and its bounding box taken, giving a centre, a ground line and a footprint width.
+// leftPercent is the image's CENTRE — the stylesheet applies translateX(-50%) —
+// so each value below is the measured lot centre, used directly.
+// widthPercent is the lot's own width × 1.25 — a building overhangs its plot a
+// little, and the source PNG carries transparent margin around the art.
 export const TOWN_BUILDING_PLACEMENTS: readonly TownBuildingPlacement[] = [
-  { id: 'honjin', leftPercent: 29, bottomPercent: 58, widthPercent: 29, z: 1 },
-  { id: 'dojo', leftPercent: 72, bottomPercent: 56, widthPercent: 30, z: 2 },
-  { id: 'teaHouse', leftPercent: 49, bottomPercent: 43, widthPercent: 37, z: 3 },
-  { id: 'insatsujo', leftPercent: 20, bottomPercent: 37, widthPercent: 29, z: 4 },
-  { id: 'koen', leftPercent: 77, bottomPercent: 35, widthPercent: 34, z: 5 },
-  { id: 'yatai', leftPercent: 51, bottomPercent: 25, widthPercent: 25, z: 6 },
-  { id: 'streetStage', leftPercent: 73, bottomPercent: 17, widthPercent: 45, z: 7 },
-  { id: 'foodHall', leftPercent: 28, bottomPercent: 13, widthPercent: 44, z: 8 },
+  // lot 1 — the largest plot, top centre. The headquarters belongs on it.
+  { id: 'honjin', leftPercent: 46.6, bottomPercent: 74.9, widthPercent: 44.0, z: 1 },
+  // lot 8 — small plot above the crossing.
+  { id: 'koen', leftPercent: 55.8, bottomPercent: 63.6, widthPercent: 18.0, z: 2 },
+  // lot 3 — large left plot.
+  { id: 'foodHall', leftPercent: 29.1, bottomPercent: 56.2, widthPercent: 45.0, z: 3 },
+  // lot 4 — right of the main path.
+  { id: 'dojo', leftPercent: 68.2, bottomPercent: 52.3, widthPercent: 28.6, z: 4 },
+  // lot 6 — centre plot.
+  { id: 'insatsujo', leftPercent: 57.6, bottomPercent: 39.2, widthPercent: 26.9, z: 5 },
+  // lot 2 — lower left, the widest of the lower plots.
+  { id: 'teaHouse', leftPercent: 27.3, bottomPercent: 35.2, widthPercent: 38.5, z: 6 },
+  // lot 5 — beside the water, where the bridge art belongs.
+  { id: 'streetStage', leftPercent: 78.2, bottomPercent: 21.0, widthPercent: 23.5, z: 7 },
+  // lot 7 — the small stall plot at the bottom of the district.
+  { id: 'yatai', leftPercent: 26.3, bottomPercent: 15.4, widthPercent: 17.8, z: 8 },
 ] as const
 
 /**
