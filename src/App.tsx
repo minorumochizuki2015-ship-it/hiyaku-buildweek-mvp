@@ -770,6 +770,15 @@ export default function App() {
         townEffects: [],
       }
     : null
+  // The workout screen takes a flat, already-localised duty; it renders the gold
+  // contract panel only when one genuinely exists.
+  const workoutDuty = townDuty && activeMission
+    ? {
+        name: activeMission.title,
+        route: activeMission.briefing,
+        distanceMetres: townDuty.distanceMetres,
+      }
+    : null
   const goyoDuty = townDuty
     ? {
         name: townDuty.name,
@@ -821,7 +830,7 @@ export default function App() {
   } else if (selectedTab === 'town') {
     content = <TownHomeScreen duty={townDuty} goals={goals} townParams={townParams} totalScore={currentTotalScore} mikotoQuote={mikotoQuote} locale={locale} onOpenGoyo={() => setSelectedTab('dispatch')} />
   } else if (selectedTab === 'workout') {
-    content = <WorkoutEntryScreen duty={null} onSubmit={generateMission} onBack={() => setSelectedTab('dispatch')} generating={false} locale={locale} />
+    content = <WorkoutEntryScreen duty={workoutDuty} onSubmit={generateMission} onBack={() => setSelectedTab('dispatch')} generating={false} locale={locale} />
   } else if (selectedTab === 'flags' || selectedTab === 'records') {
     content = <ComingSoonScreen tab={selectedTab} locale={locale} onReturnToDispatch={() => setSelectedTab('dispatch')} />
   } else {
