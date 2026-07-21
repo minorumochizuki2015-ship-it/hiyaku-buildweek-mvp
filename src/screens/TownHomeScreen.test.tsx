@@ -99,6 +99,25 @@ describe('TownHomeScreen', () => {
     expect(screen).toContain('src="/assets/bg-town-night-street.png"')
   })
 
+  it('places rank-tiered town facilities after the scene using the supplied measured parameters', () => {
+    const screen = renderToStaticMarkup(
+      <TownHomeScreen
+        {...SAMPLE_TOWN_HOME_PROPS}
+        totalScore={70}
+        townParams={[
+          { key: 'food-hall', label: { en: 'Food hall', ja: '御膳処' }, value: 50 },
+          { key: 'courier-flag', label: { en: 'Courier flag power', ja: '飛脚旗の力' }, value: 75 },
+        ]}
+      />,
+    )
+
+    expect(screen).toContain('src="/assets/town/gozendokoro-3.png"')
+    expect(screen).toContain('src="/assets/town/rojolive-4.png"')
+    expect(screen).toContain('src="/assets/town/chaya-3.png"')
+    expect(screen.indexOf('town-home__town')).toBeLessThan(screen.indexOf('town-growth'))
+    expect(screen.indexOf('town-growth')).toBeLessThan(screen.indexOf('town-home__params'))
+  })
+
   it('omits the folded goal strip when the caller has no goals', () => {
     const screen = renderToStaticMarkup(<TownHomeScreen {...SAMPLE_TOWN_HOME_PROPS} goals={[]} />)
 
