@@ -1,4 +1,4 @@
-import { getCourier, isCourierId, type CourierId } from './couriers'
+import { MIKOTO, isCourierId, type CourierId } from './couriers'
 
 export type AvailableMinutes = 5 | 10 | 15
 export type Energy = 'Low' | 'Steady' | 'Ready'
@@ -43,8 +43,7 @@ function hashText(value: string): number {
 }
 
 export function mockGenerateMission(input: MissionInput): Mission {
-  const courier = getCourier(input.courierId)
-  const seed = `${input.courierId}|${input.availableMinutes}|${input.energy}|${input.displayName?.trim().toLowerCase() ?? ''}`
+  const seed = `${input.availableMinutes}|${input.energy}|${input.displayName?.trim().toLowerCase() ?? ''}`
   const dispatches = [
     ['the Lantern Dispatch', 'A sealed dispatch awaits beneath the evening lanterns.'],
     ['the Dawn Reply', 'A reply must reach its door before the morning crowd gathers.'],
@@ -52,26 +51,25 @@ export function mockGenerateMission(input: MissionInput): Mission {
   ] as const
   const [dispatch, premise] = dispatches[hashText(seed) % dispatches.length]
   return {
-    courierId: courier.id as CourierId,
-    title: `${courier.gameName}: ${dispatch}`,
-    briefing: `${courier.gameName} leads from ${courier.landmark}. ${premise} Keep your ${courier.classEn.toLowerCase()} focus and carry it with care.`,
+    courierId: MIKOTO.id,
+    title: `${MIKOTO.gameName}: ${dispatch}`,
+    briefing: `${MIKOTO.missionStartQuote} ${premise}`,
     milestones: {
-      25: `${courier.gameName} marks the first stretch. Your ${courier.attribute} spirit is steady.`,
-      50: `Halfway to the handoff — ${courier.gameName} keeps the route clear.`,
-      75: `${courier.landmark} feels close. One more measured push for the dispatch.`,
+      25: `${MIKOTO.gameName} marks the first stretch. ${MIKOTO.role} keeps the route clear.`,
+      50: `Halfway to the handoff — ${MIKOTO.normalQuote}`,
+      75: `${MIKOTO.base} feels close. One more measured push for the dispatch.`,
     },
-    historicalNote: courier.historicalFact,
-    completionStyle: `${courier.classEn} poise, carried with ${input.energy.toLowerCase()} resolve`,
+    historicalNote: MIKOTO.missionStartQuote,
+    completionStyle: `${MIKOTO.titleEn} poise, carried with ${input.energy.toLowerCase()} resolve`,
   }
 }
 
 export function mockCompleteMission(summary: CompletionSummary): MissionCompletion {
-  const courier = getCourier(summary.courierId)
   const rank = summary.completionPercent >= 100 ? 'Edo Roadrunner' : 'Steady Courier'
   return {
     rank,
-    epilogue: `${courier.gameName} records ${summary.missionTitle} as complete. Your ${Math.round(summary.distanceMeters)} metre journey reached its destination as an ${rank}.`,
-    nextMissionTeaser: `${courier.gameName} will have another dispatch ready beyond ${courier.landmark}.`,
+    epilogue: `${MIKOTO.missionCompleteQuote} Your ${Math.round(summary.distanceMeters)} metre journey reached its destination as an ${rank}.`,
+    nextMissionTeaser: `${MIKOTO.base} will have another dispatch ready.`,
   }
 }
 
@@ -116,7 +114,7 @@ export function isMission(value: unknown): value is Mission {
     isCourierId(mission.courierId) &&
     isNonEmptyString(mission.historicalNote) &&
     isNonEmptyString(mission.completionStyle) &&
-    mission.historicalNote === getCourier(mission.courierId).historicalFact
+    mission.historicalNote === MIKOTO.missionStartQuote
   )
 }
 

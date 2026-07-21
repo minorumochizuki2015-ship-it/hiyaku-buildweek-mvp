@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
+import * as activityModule from '../shared/activity'
+import { MIKOTO } from '../shared/couriers'
 import {
-  assignNarrator,
   calculateActivityScores,
   dominantActivity,
   runScore,
@@ -28,16 +29,20 @@ describe('activity scoring', () => {
   it('uses run, then strength, then food as its dominant-activity tie-break order', () => {
     expect(dominantActivity({ food: 80, strength: 80, run: 10 })).toBe('strength')
     expect(dominantActivity({ food: 80, strength: 80, run: 80 })).toBe('run')
-    expect(assignNarrator({ food: 80, strength: 80, run: 80 }, 'same-day-summary')).toMatch(/^(tadataka|yoichi)$/)
   })
 
-  it('assigns an all-zero day to a deterministic run narrator', () => {
-    const scores = { food: 0, strength: 0, run: 0 }
-    const firstAssignment = assignNarrator(scores, 'zero-day')
+  it('keeps Mikoto fixed regardless of the activity mix that wins the score', () => {
+    const activityMixes = [
+      { food: 90, strength: 20, run: 10 },
+      { food: 20, strength: 90, run: 10 },
+      { food: 20, strength: 10, run: 90 },
+      { food: 0, strength: 0, run: 0 },
+    ]
 
-    expect(firstAssignment).toMatch(/^(tadataka|yoichi)$/)
-    expect(assignNarrator(scores, 'zero-day')).toBe(firstAssignment)
-    expect(totalScore(scores.food, scores.strength, scores.run)).toBe(0)
+    expect(activityMixes.map(dominantActivity)).toEqual(['food', 'strength', 'run', 'run'])
+    expect(activityMixes.map(() => MIKOTO.id)).toEqual(['mikoto', 'mikoto', 'mikoto', 'mikoto'])
+    expect(activityModule).not.toHaveProperty('assignNarrator')
+    expect(totalScore(0, 0, 0)).toBe(0)
   })
 
   it('converts each sub-score directly into its current game resource', () => {

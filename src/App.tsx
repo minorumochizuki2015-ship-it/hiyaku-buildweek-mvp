@@ -9,7 +9,7 @@ import {
   type MissionCompletion,
   type MissionInput,
 } from '../shared/mockMission'
-import { COURIERS, getCourier, type CourierId } from '../shared/couriers'
+import { MIKOTO } from '../shared/couriers'
 import { distanceTargetMetres, rivalDistanceAtElapsedSeconds, type MovementMode, startWalkTracking } from './movement'
 import { checkpointRouteState } from './checkpointRoute'
 import { ArrivalSeal, buildSealSummary, formatSealDate, sealCanvasDataUrl, type ArrivalSealData } from './ArrivalSeal'
@@ -194,7 +194,6 @@ export function DispatchScreen({ onGenerate, generating }: { onGenerate: (input:
   const [energy, setEnergy] = useState<Energy>('Steady')
   const [displayName, setDisplayName] = useState('')
   const [movementMode, setMovementMode] = useState<MovementMode>('demo')
-  const [courierId, setCourierId] = useState<CourierId>('tadataka')
 
   return (
     <main className="screen dispatch-screen" aria-labelledby="dispatch-title">
@@ -218,7 +217,7 @@ export function DispatchScreen({ onGenerate, generating }: { onGenerate: (input:
         className="dispatch-form"
         onSubmit={(event) => {
           event.preventDefault()
-          onGenerate({ availableMinutes, energy, courierId, displayName: displayName.trim() || undefined }, movementMode)
+          onGenerate({ availableMinutes, energy, courierId: MIKOTO.id, displayName: displayName.trim() || undefined }, movementMode)
         }}
       >
         <fieldset>
@@ -234,19 +233,14 @@ export function DispatchScreen({ onGenerate, generating }: { onGenerate: (input:
         </fieldset>
 
         <fieldset className="courier-fieldset">
-          <legend>Choose your courier</legend>
-          <div className="courier-picker" role="radiogroup" aria-label="Choose your historical courier">
-            {COURIERS.map((courier) => (
-              <label className="courier-choice" key={courier.id}>
-                <input type="radio" name="courier" value={courier.id} checked={courierId === courier.id} onChange={() => setCourierId(courier.id)} />
-                <span className="courier-card">
-                  <strong>{courier.gameName}</strong>
-                  <small>{courier.classEn} · {courier.attribute}</small>
-                  <em>{courier.figureEn}</em>
-                  <i>Empowered by {courier.empoweredBy}</i>
-                </span>
-              </label>
-            ))}
+          <legend>Courier on duty</legend>
+          <div className="courier-picker" aria-label="Fixed courier identity">
+            <div className="courier-card" style={{ flex: '1 1 auto' }}>
+              <strong>{MIKOTO.gameName}</strong>
+              <small>{MIKOTO.titleEn} · {MIKOTO.attributes}</small>
+              <em>{MIKOTO.role} · {MIKOTO.base}</em>
+              <i>{MIKOTO.normalQuote}</i>
+            </div>
           </div>
         </fieldset>
 
@@ -301,7 +295,6 @@ export function JourneyScreen({ mission, state, stats, targetDistanceMetres, ava
   onPause: () => void
   onEnd: () => void
 }) {
-  const courier = getCourier(mission.courierId)
   const distance = Math.round(stats.distanceMetres)
   const rivalDistance = rivalDistanceAtElapsedSeconds(targetDistanceMetres, availableMinutes, mission.title, stats.elapsedSeconds)
   const progressLabel = state === 'ready' ? 'Mission ready' : state === 'paused' ? 'Journey paused' : state === 'completing' ? 'Writing arrival…' : movementMode === 'walk' ? 'Real Walk' : 'Judge Demo'
@@ -314,7 +307,7 @@ export function JourneyScreen({ mission, state, stats, targetDistanceMetres, ava
         <div>
           <p className="eyebrow">{progressLabel}</p>
           <h1 id="journey-title">{mission.title}</h1>
-          <p className="courier-leading">率いる飛脚: {courier.gameName}</p>
+          <p className="courier-leading">率いる飛脚: {MIKOTO.gameName} — {MIKOTO.title}</p>
         </div>
         <span className="demo-badge">{movementMode === 'walk' ? 'REAL WALK' : 'JUDGE DEMO'}</span>
       </header>
@@ -347,7 +340,7 @@ export function JourneyScreen({ mission, state, stats, targetDistanceMetres, ava
         {locationStatus && <p className="location-status">{locationStatus}</p>}
       </section>
 
-      <p className="empowered-line">Your {courier.empoweredBy} strengthens {courier.gameName}.</p>
+      <p className="empowered-line">{MIKOTO.missionStartQuote}</p>
 
       <section className="journey-detail" aria-label="Journey metrics">
         <span><strong>{formatDuration(stats.elapsedSeconds)}</strong> elapsed</span>
@@ -378,7 +371,6 @@ export function ArrivalScreen({ mission, completion, stats, targetDistanceMetres
   onRestart: () => void
   onNutrition?: () => void
 }) {
-  const courier = getCourier(mission.courierId)
   const distance = Math.round(stats.distanceMetres)
   const rivalDistance = rivalDistanceAtElapsedSeconds(targetDistanceMetres, availableMinutes, mission.title, stats.elapsedSeconds)
   const [shareStatus, setShareStatus] = useState('')
@@ -390,9 +382,6 @@ export function ArrivalScreen({ mission, completion, stats, targetDistanceMetres
     duration: formatDuration(stats.elapsedSeconds),
     completion: `${stats.progress}%`,
     date: formatSealDate(),
-    courierGameName: courier.gameName,
-    courierFigureEn: courier.figureEn,
-    crestName: courier.crestName,
   }
   const text = buildSealSummary(sealData)
 
@@ -450,7 +439,7 @@ export function ArrivalScreen({ mission, completion, stats, targetDistanceMetres
       <section className="epilogue">
         <p>{completion.epilogue}</p>
         <p className="rival-arrival-summary">{arrivalRivalSummary(stats.distanceMetres, rivalDistance)}</p>
-        <p className="historical-note"><strong>From Edo:</strong> {mission.historicalNote}</p>
+        <p className="historical-note"><strong>{MIKOTO.gameName}:</strong> {MIKOTO.missionCompleteQuote}</p>
         <p className="next-mission">Next dispatch: {completion.nextMissionTeaser}</p>
       </section>
       <button className="meal-button" type="button" onClick={() => setMealOpen(true)}>
