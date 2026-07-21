@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import {
   isMission,
   isMissionCompletion,
@@ -283,16 +283,21 @@ export function CheckpointRoute({ progress, targetDistanceMetres, locale }: { pr
   const route = checkpointRouteState(progress, targetDistanceMetres)
 
   return (
-    <section className="checkpoint-route" aria-label="Edo checkpoint route">
+    <section
+      className="checkpoint-route"
+      aria-label="Edo checkpoint route"
+      // The gold length of the rail is the measured progress, not decoration.
+      style={{ '--route-progress': `${Math.max(0, Math.min(100, progress))}%` } as CSSProperties}
+    >
       <div className="checkpoint-track" aria-hidden="true" />
       <ol className="checkpoint-stops">
         <li className="checkpoint-stop completed checkpoint-start">
-          <span className="checkpoint-node" aria-hidden="true">●</span>
+          <span className="checkpoint-node" aria-hidden="true">✓</span>
           <span className="checkpoint-name">{checkpointEndpoints.departure[locale]}</span>
         </li>
         {route.waypoints.map((waypoint) => (
           <li className={`checkpoint-stop ${waypoint.state}`} key={waypoint.name.ja} aria-current={waypoint.state === 'current' ? 'step' : undefined}>
-            <span className="checkpoint-node" aria-hidden="true">{waypoint.state === 'current' ? '⚑' : '●'}</span>
+            <span className="checkpoint-node" aria-hidden="true">{waypoint.state === 'current' ? '⚑' : waypoint.state === 'completed' ? '✓' : '●'}</span>
             <span className="checkpoint-name">{waypoint.name[locale]}</span>
           </li>
         ))}
@@ -398,6 +403,24 @@ export function DispatchScreen({ locale, onGenerate, generating }: { locale: Loc
           <span>Your name <em>(optional)</em></span>
           <input value={displayName} onChange={(event) => setDisplayName(event.target.value)} maxLength={40} placeholder="Courier name" />
         </label>
+
+        {/* The order panel outranks every other panel on this screen: it is the
+            thing being issued. The target is the real figure the run will be
+            measured against — distanceTargetMetres is a pure function of the two
+            choices above, so changing Energy moves the number live. */}
+        <section className="order-panel" aria-label="Tonight's order">
+          <header className="order-head">
+            <p className="eyebrow">ISSUED ORDER / 本日の御用</p>
+            <span className="order-seal" aria-hidden="true">御用</span>
+          </header>
+          <p className="order-target">
+            Current target
+            <strong>{distanceTargetMetres(availableMinutes, energy)}</strong>
+            <small>m</small>
+          </p>
+          <CheckpointRoute progress={0} targetDistanceMetres={distanceTargetMetres(availableMinutes, energy)} locale={locale} />
+        </section>
+
         <button className="primary-button" type="submit" disabled={generating}>
           {generating ? 'Preparing your mission…' : 'Accept Dispatch'}
         </button>

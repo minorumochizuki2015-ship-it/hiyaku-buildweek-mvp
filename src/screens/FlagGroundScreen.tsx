@@ -141,11 +141,9 @@ export function FlagGroundScreen({ courierFlagPower, locale, onWalk }: FlagGroun
         </div>
       </section>
 
+      {/* powerHelp is already printed under the gauge it explains; repeating it
+          directly above the button said the same sentence twice on one screen. */}
       <section className="flag-ground__action" aria-label={copy.walkAction}>
-        <div>
-          <span aria-hidden="true">⚑</span>
-          <p>{copy.powerHelp}</p>
-        </div>
         <button type="button" onClick={onWalk}>{copy.walkAction} <span aria-hidden="true">›</span></button>
         <p>{copy.reassurance}</p>
       </section>

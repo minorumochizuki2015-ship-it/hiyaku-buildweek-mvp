@@ -21,7 +21,11 @@
 .flag-ground h1 { color: #fff1c7; font-size: 1.42rem; line-height: 1.18; }
 .flag-ground__lead { margin-top: 3px; color: #c9c0de; font-size: .68rem; line-height: 1.35; }
 
-.flag-ground__district { position: relative; min-height: 260px; overflow: hidden; margin-bottom: 12px; border: 1px solid rgb(247 217 138 / 32%); border-radius: 14px; background: linear-gradient(145deg, rgb(48 35 84 / 88%), rgb(15 21 45 / 92%)); box-shadow: inset 0 0 50px rgb(156 120 255 / 14%); }
+/* 260px could not hold the layout it contains: the 144px home circle sits
+   centred while 64px locked cards pin to the top and bottom edges, so the north
+   card (Shiba) overlapped the circle. 330px is circle + both cards + breathing
+   room, measured rather than eyeballed. */
+.flag-ground__district { position: relative; min-height: 330px; overflow: hidden; margin-bottom: 12px; border: 1px solid rgb(247 217 138 / 32%); border-radius: 14px; background: linear-gradient(145deg, rgb(48 35 84 / 88%), rgb(15 21 45 / 92%)); box-shadow: inset 0 0 50px rgb(156 120 255 / 14%); }
 .flag-ground__district::before, .flag-ground__district::after { position: absolute; content: ""; pointer-events: none; }
 .flag-ground__district::before { inset: 0; opacity: .32; background-image: linear-gradient(30deg, transparent 48%, rgb(247 217 138 / 18%) 49%, transparent 50%), linear-gradient(150deg, transparent 48%, rgb(247 217 138 / 13%) 49%, transparent 50%); background-size: 42px 34px; }
 .flag-ground__district::after { inset: 24px; border: 1px solid rgb(247 242 232 / 10%); border-radius: 50%; }

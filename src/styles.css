@@ -31,8 +31,18 @@ h2 { font-size: 1.7rem; line-height: 1.3; }
   letter-spacing: .01em;
   transition: transform .18s ease, box-shadow .18s ease, background .18s ease;
 }
-.primary-button { border: 1px solid #ffd878; background: #f4b942; color: #21180e; box-shadow: 0 7px 20px rgb(244 185 66 / 22%); }
-.primary-button:hover:not(:disabled) { background: #ffd878; transform: translateY(-2px); }
+/* The primary action is a struck plate, not a flat rectangle: a lit top face over
+   a hard darker edge. On press the plate sinks into that edge, so the button has
+   somewhere to travel to. */
+.primary-button {
+  border: 1px solid #ffe6a3;
+  background: linear-gradient(180deg, #ffd878 0%, #f4b942 52%, #d99b2c 100%);
+  color: #21180e;
+  font-family: Georgia, "Hiragino Mincho ProN", serif;
+  box-shadow: 0 4px 0 #8f6416, 0 10px 22px rgb(0 0 0 / 42%), inset 0 1px 0 rgb(255 255 255 / 60%);
+}
+.primary-button:hover:not(:disabled) { background: linear-gradient(180deg, #ffe6a3 0%, #ffd878 52%, #e0a634 100%); transform: translateY(-1px); box-shadow: 0 5px 0 #8f6416, 0 13px 26px rgb(0 0 0 / 46%), inset 0 1px 0 rgb(255 255 255 / 70%); }
+.primary-button:active:not(:disabled) { transform: translateY(3px); box-shadow: 0 1px 0 #8f6416, 0 4px 10px rgb(0 0 0 / 40%), inset 0 1px 0 rgb(255 255 255 / 40%); }
 .primary-button:disabled { opacity: .62; cursor: wait; }
 .secondary-button { border: 1px solid rgb(247 242 232 / 55%); background: rgb(12 16 34 / 55%); color: #f7f2e8; }
 .secondary-button:hover:not(:disabled) { border-color: #f7d98a; background: rgb(156 120 255 / 18%); }
@@ -76,10 +86,92 @@ legend, .name-field > span { display: block; margin-bottom: 9px; color: #e8e4dc;
 .movement-helper, .privacy-note { margin: 8px 1px 0; font-size: .76rem; line-height: 1.45; }
 .movement-helper { color: #d4cddd; }
 .privacy-note { color: #f7d98a; }
-.choice input:checked + span { border-color: #f4b942; background: #f4b942; color: #21180e; box-shadow: inset 0 0 0 1px rgb(255 255 255 / 32%); }
-.choice input:checked + span small { color: #58421c; }
+/* Selection reads as a game, not a form: the chosen chip keeps the dark ground
+   and is claimed by a gold outline plus a struck check badge. A solid gold fill
+   was louder but flattened the panel stack — everything selected became the
+   brightest thing on screen regardless of its rank. */
+.choice input:checked + span {
+  border-color: #f4b942;
+  background: linear-gradient(160deg, rgb(156 120 255 / 26%), rgb(244 185 66 / 10%));
+  color: #fffaf0;
+  box-shadow: inset 0 0 0 1px rgb(244 185 66 / 55%), 0 0 16px rgb(244 185 66 / 22%);
+}
+.choice input:checked + span small { color: #f7d98a; }
+.choice:has(input:checked)::after {
+  content: '✓';
+  position: absolute;
+  right: -5px;
+  bottom: -5px;
+  display: grid;
+  width: 20px;
+  height: 20px;
+  place-items: center;
+  border: 1px solid #fff4c9;
+  border-radius: 50%;
+  background: #f4b942;
+  color: #21180e;
+  font-size: .62rem;
+  font-weight: 900;
+  line-height: 1;
+  box-shadow: 0 2px 7px rgb(0 0 0 / 45%);
+}
 .name-field input { width: 100%; min-height: 50px; padding: 0 14px; border: 1px solid rgb(247 242 232 / 30%); border-radius: 10px; background: rgb(247 242 232 / 8%); color: #f7f2e8; }
 .name-field input::placeholder { color: #b9b5c2; }
+
+/* --- Issued order -------------------------------------------------------
+   Top of the three panel elevations. The fieldsets above it are ordinary
+   panels and the checkpoint rail inside it is a quiet inset; this one is
+   bordered in gold, lifted, and sealed, so the screen has an obvious subject
+   rather than five sections of equal weight. */
+.order-panel {
+  position: relative;
+  padding: 15px 16px 4px;
+  border: 1px solid rgb(244 185 66 / 62%);
+  border-radius: 14px;
+  background: linear-gradient(165deg, rgb(52 38 96 / 92%), rgb(23 22 49 / 94%));
+  box-shadow: 0 14px 34px rgb(0 0 0 / 45%), inset 0 1px 0 rgb(255 236 180 / 22%);
+}
+.order-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.order-head .eyebrow { margin: 0; }
+.order-seal {
+  display: grid;
+  width: 40px;
+  height: 48px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid rgb(244 185 66 / 70%);
+  border-radius: 7px;
+  color: #f7d98a;
+  font-family: Georgia, "Hiragino Mincho ProN", serif;
+  font-size: .74rem;
+  font-weight: 800;
+  line-height: 1.15;
+  writing-mode: vertical-rl;
+  transform: rotate(-6deg);
+}
+.order-target {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 4px 0 12px;
+  color: #d4cddd;
+  font-size: .74rem;
+  font-weight: 800;
+  letter-spacing: .04em;
+}
+.order-target strong {
+  margin-left: auto;
+  color: #fffaf0;
+  font-family: Georgia, "Hiragino Mincho ProN", serif;
+  font-size: 2.5rem;
+  font-variant-numeric: tabular-nums;
+  line-height: .9;
+  letter-spacing: -.03em;
+}
+.order-target small { color: #f7d98a; font-size: .82rem; font-weight: 800; }
+/* Inside the order panel the rail is an inset, so it does not compete with the
+   panel that contains it. */
+.order-panel .checkpoint-route { margin: 0 -16px; border-block-color: rgb(244 185 66 / 20%); background: rgb(9 11 26 / 55%); }
 
 .journey-screen {
   display: flex;
@@ -103,15 +195,24 @@ legend, .name-field > span { display: block; margin-bottom: 9px; color: #e8e4dc;
 .ring-copy small { margin-left: 3px; color: #f7d98a; font-family: "Avenir Next", sans-serif; font-size: .32em; letter-spacing: 0; }
 .ring-copy span { margin-top: 9px; color: #e8e4dc; font-size: .67rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
 .checkpoint-route { position: relative; margin: 0 0 14px; padding: 13px 2px 9px; border-block: 1px solid rgb(247 217 138 / 30%); background: linear-gradient(90deg, rgb(23 22 49 / 92%), rgb(32 28 58 / 92%), rgb(23 22 49 / 92%)); }
-.checkpoint-track { position: absolute; top: 27px; right: calc(100% / 12); left: calc(100% / 12); height: 2px; background: linear-gradient(90deg, #f4b942, #9c78ff 78%, rgb(247 242 232 / 30%)); }
+/* The rail is unlit road that the courier lights as they walk it. --route-progress
+   is set from the measured progress in CheckpointRoute, so the gold length is the
+   real distance covered — never a decorative fill. */
+.checkpoint-track { position: absolute; top: 27px; right: calc(100% / 12); left: calc(100% / 12); height: 3px; border-radius: 2px; background: rgb(247 242 232 / 16%); }
+.checkpoint-track::after { content: ''; position: absolute; inset: 0 auto 0 0; width: var(--route-progress, 0%); border-radius: 2px; background: linear-gradient(90deg, #f4b942, #ffd878); box-shadow: 0 0 10px rgb(244 185 66 / 55%); transition: width .7s linear; }
 .checkpoint-stops { position: relative; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); align-items: start; margin: 0; padding: 0; list-style: none; }
 .checkpoint-stop { display: grid; min-width: 0; justify-items: center; color: #aaa5b5; text-align: center; }
-.checkpoint-node { display: grid; width: 29px; height: 29px; place-items: center; border: 1px solid rgb(247 242 232 / 33%); border-radius: 50%; background: #171631; color: #aaa5b5; font-size: .66rem; line-height: 1; }
-.checkpoint-name { margin-top: 6px; color: inherit; font-size: .62rem; font-weight: 800; letter-spacing: .025em; line-height: 1.35; line-break: strict; white-space: nowrap; }
+.checkpoint-node { display: grid; width: 30px; height: 30px; place-items: center; border: 1px solid rgb(247 242 232 / 26%); border-radius: 50%; background: #14132b; color: #8e89a0; font-size: .66rem; line-height: 1; box-shadow: inset 0 1px 0 rgb(255 255 255 / 7%); transition: .25s ease; }
+/* Six stops share the phone width, so the longest English name (Ryogoku Bridge)
+   has about 60px. nowrap made neighbouring names run into each other; they wrap
+   instead, and the row reserves the height of the tallest label. */
+.checkpoint-name { margin-top: 7px; padding: 0 1px; color: inherit; font-size: .5rem; font-weight: 800; letter-spacing: -.01em; line-height: 1.3; line-break: strict; overflow-wrap: anywhere; }
 .checkpoint-stop.completed { color: #f7d98a; }
 .checkpoint-stop.completed .checkpoint-node { border-color: #f4b942; background: #f4b942; color: #21180e; box-shadow: 0 0 11px rgb(244 185 66 / 25%); }
 .checkpoint-stop.current { color: #fffaf0; }
-.checkpoint-stop.current .checkpoint-node { border-color: #fff4c9; border-radius: 3px 50% 50% 3px; background: #9c78ff; color: #fffaf0; box-shadow: 0 0 14px rgb(156 120 255 / 60%); transform: translateY(-2px); }
+/* The courier's own position is the one node that breaks the circle: a ringed
+   marker lifted off the rail, so where you are never reads as one more stop. */
+.checkpoint-stop.current .checkpoint-node { width: 36px; height: 36px; border: 2px solid #ffd878; background: radial-gradient(circle, #9c78ff 0%, #5e3fb0 100%); color: #fffaf0; font-size: .78rem; box-shadow: 0 0 0 4px rgb(244 185 66 / 18%), 0 0 18px rgb(156 120 255 / 70%); transform: translateY(-3px); }
 .checkpoint-stop.finish { color: #d4c6ff; }
 .checkpoint-stop.finish .checkpoint-node { border-color: #9c78ff; background: #201a3c; color: #d4c6ff; }
 .checkpoint-stop.finish.completed .checkpoint-node { border-color: #f4b942; background: #f4b942; color: #21180e; }
