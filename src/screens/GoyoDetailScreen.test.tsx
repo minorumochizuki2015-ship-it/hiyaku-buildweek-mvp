@@ -61,6 +61,16 @@ describe('GoyoDetailScreen', () => {
     expect(screen).not.toContain('No duty has been issued yet')
   })
 
+  it('discloses locally generated narrative in both languages and keeps worker narrative clean', () => {
+    const localEnglish = renderToStaticMarkup(<GoyoDetailScreen {...props} isLocalNarrative />)
+    const localJapanese = renderToStaticMarkup(<GoyoDetailScreen {...props} locale="ja" isLocalNarrative />)
+    const workerNarrative = renderToStaticMarkup(<GoyoDetailScreen {...props} isLocalNarrative={false} />)
+
+    expect(localEnglish).toContain('Offline demo — narrative generated locally')
+    expect(localJapanese).toContain('オフラインのデモ表示 — 物語は端末内で生成しています')
+    expect(workerNarrative).not.toContain('Offline demo — narrative generated locally')
+  })
+
   it('switches every local label and supplied value to Japanese', () => {
     const screen = renderToStaticMarkup(<GoyoDetailScreen {...props} locale="ja" />)
 

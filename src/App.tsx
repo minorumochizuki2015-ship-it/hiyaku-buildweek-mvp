@@ -428,10 +428,11 @@ export interface GoyoTabContentProps {
   onBack: () => void
   onGenerate: (input: MissionInput, movementMode: MovementMode) => void
   generating: boolean
+  isLocalNarrative?: boolean
 }
 
 /** The Goyo tab is either the duty detail or its creation form, never both. */
-export function GoyoTabContent({ duty, checkpoints, goals, townEffects, mikotoQuote, locale, onAccept, onBack, onGenerate, generating }: GoyoTabContentProps) {
+export function GoyoTabContent({ duty, checkpoints, goals, townEffects, mikotoQuote, locale, onAccept, onBack, onGenerate, generating, isLocalNarrative = false }: GoyoTabContentProps) {
   if (!duty) return <DispatchScreen locale={locale} onGenerate={onGenerate} generating={generating} />
 
   return (
@@ -442,6 +443,7 @@ export function GoyoTabContent({ duty, checkpoints, goals, townEffects, mikotoQu
       townEffects={townEffects}
       mikotoQuote={mikotoQuote}
       locale={locale}
+      isLocalNarrative={isLocalNarrative}
       onAccept={onAccept}
       onBack={onBack}
     />
@@ -897,7 +899,7 @@ export default function App() {
   } else if (selectedTab === 'flags') {
     content = <FlagsTabContent courierFlagPower={townResources.courierFlagPower} locale={locale} onWalk={() => setSelectedTab('workout')} />
   } else {
-    content = <GoyoTabContent duty={goyoDuty} checkpoints={goyoCheckpoints} goals={goyoGoals} townEffects={goyoTownEffects} mikotoQuote={goyoDuty ? mikotoQuote : null} locale={locale} onAccept={() => setState(journeyStateAfterGoyoAccept())} onBack={() => setSelectedTab('town')} onGenerate={generateMission} generating={false} />
+    content = <GoyoTabContent duty={goyoDuty} checkpoints={goyoCheckpoints} goals={goyoGoals} townEffects={goyoTownEffects} mikotoQuote={goyoDuty ? mikotoQuote : null} locale={locale} isLocalNarrative={missionUsedLocalFallback} onAccept={() => setState(journeyStateAfterGoyoAccept())} onBack={() => setSelectedTab('town')} onGenerate={generateMission} generating={false} />
   }
 
   return (

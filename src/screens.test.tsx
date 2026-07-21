@@ -346,14 +346,30 @@ describe('client Worker fallback', () => {
       const result = await requestMissionWithFallback({ availableMinutes: 10, energy: 'Steady', courierId: MIKOTO.id }, 'en')
       const state: JourneyState = 'active'
       const screen = renderToStaticMarkup(<JourneyScreen mission={result.value} locale="en" state={state} stats={{ elapsedSeconds: 20, progress: 50, distanceMetres: 400 }} targetDistanceMetres={800} availableMinutes={10} movementMode="demo" locationStatus="" isLocalNarrative={result.local} onPause={() => undefined} onEnd={() => undefined} />)
+      const goyo = renderToStaticMarkup(<GoyoTabContent duty={{ name: { en: result.value.title, ja: result.value.title }, description: { en: result.value.briefing, ja: result.value.briefing } }} checkpoints={[]} goals={[]} townEffects={[]} mikotoQuote={null} locale="en" isLocalNarrative={result.local} onAccept={() => undefined} onBack={() => undefined} onGenerate={() => undefined} generating={false} />)
 
       expect(fetchMock).toHaveBeenCalledWith('/api/mission', expect.objectContaining({ method: 'POST', signal: expect.any(AbortSignal) }))
       expect(result.local).toBe(true)
       expect(journeyPresentationFor(state)).toBe('journey')
       expect(screen).toContain(result.value.title)
       expect(screen).toContain('Offline demo — narrative generated locally')
+      expect(goyo).toContain('Offline demo — narrative generated locally')
       expect(t('ja', 'offline.mission')).toBe('オフラインのデモ表示 — 物語は端末内で生成しています')
       expect(screen).toContain('End Mission')
+    } finally {
+      vi.unstubAllGlobals()
+    }
+  })
+
+  it('keeps a Worker-provided mission narrative clean on Goyo detail', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(mission), { status: 200 }))
+    vi.stubGlobal('fetch', fetchMock)
+    try {
+      const result = await requestMissionWithFallback({ availableMinutes: 10, energy: 'Steady', courierId: MIKOTO.id }, 'en')
+      const goyo = renderToStaticMarkup(<GoyoTabContent duty={{ name: { en: result.value.title, ja: result.value.title }, description: { en: result.value.briefing, ja: result.value.briefing } }} checkpoints={[]} goals={[]} townEffects={[]} mikotoQuote={null} locale="en" isLocalNarrative={result.local} onAccept={() => undefined} onBack={() => undefined} onGenerate={() => undefined} generating={false} />)
+
+      expect(result.local).toBe(false)
+      expect(goyo).not.toContain('Offline demo — narrative generated locally')
     } finally {
       vi.unstubAllGlobals()
     }

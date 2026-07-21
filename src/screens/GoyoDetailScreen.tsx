@@ -1,4 +1,5 @@
 import { useState, type CSSProperties } from 'react'
+import { t } from '../i18n'
 import './goyo-detail.css'
 
 export type GoyoLocale = 'en' | 'ja'
@@ -42,6 +43,7 @@ export interface GoyoDetailScreenProps {
   townEffects: readonly GoyoTownEffect[]
   mikotoQuote: GoyoLocalizedText | null
   locale: GoyoLocale
+  isLocalNarrative?: boolean
   onAccept: () => void
   onBack: () => void
 }
@@ -94,6 +96,7 @@ export function GoyoDetailScreen({
   townEffects,
   mikotoQuote,
   locale,
+  isLocalNarrative = false,
   onAccept,
   onBack,
 }: GoyoDetailScreenProps) {
@@ -130,6 +133,7 @@ export function GoyoDetailScreen({
                 <span>{text(duty.description, locale)}</span>
               </div>
             </div>
+            {isLocalNarrative && <p className="goyo-detail__offline-demo-notice" role="status">{t(locale, 'offline.mission')}</p>}
             <dl className="goyo-detail__facts">
               <div>
                 <dt>{text(copy.distance, locale)}</dt>
