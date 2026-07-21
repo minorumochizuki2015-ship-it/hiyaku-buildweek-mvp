@@ -113,14 +113,13 @@ describe('HIKYAKU static screens', () => {
     expect(screen).toContain('Start Another Mission')
     expect(screen).toContain(completion.rank)
     expect(screen).toContain('/assets/arrival-honjin-goze.mp4')
-    expect(screen).toContain('Today&#x27;s meal')
+    expect(screen).not.toContain('class="meal-button"')
     expect(screen).toContain('simulated AI pacer')
     expect(screen).toContain('HIKYAKU · ARRIVAL SEAL')
     expect(screen).toContain('Share Seal')
     expect(screen).toContain('carried for Shinonome Mikoto')
     expect(screen).toContain(MIKOTO.crestName)
     expect(screen).toContain(MIKOTO.missionCompleteQuoteEn)
-    expect(screen).not.toContain('meal-reward-kanto.mp4')
   })
 
   it('keeps the existing Arrival-to-Nutrition route available', () => {
@@ -128,6 +127,7 @@ describe('HIKYAKU static screens', () => {
     const screen = renderToStaticMarkup(<ArrivalScreen mission={mission} completion={completion} locale="en" stats={{ elapsedSeconds: 100, progress: 100, distanceMetres: 480 }} targetDistanceMetres={480} availableMinutes={10} onRestart={() => undefined} onReturnToTown={() => undefined} onNutrition={() => undefined} />)
 
     expect(nutritionStateFor('arrival')).toBe('nutrition')
+    expect(screen).toContain('class="nutrition-link"')
     expect(screen).toContain('Courier&#x27;s table')
     expect(screen).toContain('View nutrition report')
   })

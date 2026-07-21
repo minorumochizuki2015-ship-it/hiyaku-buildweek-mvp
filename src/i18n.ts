@@ -9,7 +9,6 @@ type TranslationKey =
   | 'nav.records'
   | 'nav.goyoHelp.aria'
   | 'nav.goyoHelp.copy'
-  | 'arrival.todayMeal'
   | 'arrival.couriersTable'
   | 'placeholder.eyebrow'
   | 'placeholder.title'
@@ -28,7 +27,6 @@ const UI_COPY: Record<Locale, Record<TranslationKey, string>> = {
     'nav.records': 'Records',
     'nav.goyoHelp.aria': 'Explain Goyo',
     'nav.goyoHelp.copy': 'Goyo — today\'s courier duty from the Nihonbashi headquarters.',
-    'arrival.todayMeal': "Today's meal",
     'arrival.couriersTable': "Courier's table",
     'placeholder.eyebrow': 'HIKYAKU LEDGER',
     'placeholder.title': '{tab} is coming soon.',
@@ -46,7 +44,6 @@ const UI_COPY: Record<Locale, Record<TranslationKey, string>> = {
     'nav.records': '記録帳',
     'nav.goyoHelp.aria': '御用の説明を表示',
     'nav.goyoHelp.copy': '御用 — 日本橋本陣から届く、本日のつとめ。',
-    'arrival.todayMeal': '今日の一食',
     'arrival.couriersTable': '食の帳簿',
     'placeholder.eyebrow': 'HIKYAKU 帳簿',
     'placeholder.title': '{tab} は準備中です。',
@@ -125,7 +122,6 @@ const JA_TEXT: Record<string, string> = {
   'Your courier run has found its door.': 'あなたの飛脚行は、目的の扉へたどり着きました。',
   'From Edo:': '江戸から:',
   'Next dispatch:': '次の任務:',
-  "Watch the courier's reward": '飛脚のご褒美を見る',
   'View nutrition report': '栄養レポートを見る',
   'Share Seal': '印を共有',
   'Return to town': '町へ戻る',
@@ -135,8 +131,6 @@ const JA_TEXT: Record<string, string> = {
   'Seal PNG downloaded.': '印の PNG を保存しました。',
   'Seal summary copied to clipboard.': '印の概要をクリップボードにコピーしました。',
   'Sharing was cancelled. Your result is still complete.': '共有を中止しました。任務結果は完了したままです。',
-  'Close meal video': '食事動画を閉じる',
-  "COURIER'S REWARD": '飛脚のご褒美',
   'HIKYAKU · ARRIVAL SEAL': 'HIKYAKU · 到着の印',
   'carried for ': '届け先: ',
   DELIVERED: '配達済',

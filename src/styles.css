@@ -160,10 +160,6 @@ legend, .name-field > span { display: block; margin-bottom: 9px; color: #e8e4dc;
 .historical-note { margin: 17px 0 0; padding: 13px 14px; border-left: 3px solid #9c78ff; border-radius: 0 8px 8px 0; background: rgb(156 120 255 / 13%); color: #e8e4dc; font-size: .9rem; line-height: 1.6; }
 .historical-note strong { color: #d7caff; }
 .next-mission { margin: 16px 0; color: #f7d98a; font-weight: 700; line-height: 1.5; }
-.meal-button { display: grid; width: 100%; grid-template-columns: auto 1fr; gap: 0 9px; align-items: center; margin: 2px 0 16px; padding: 11px 13px; border: 1px solid rgb(247 217 138 / 42%); border-radius: 11px; background: rgb(247 217 138 / 8%); color: #f7d98a; text-align: left; }
-.meal-button > span { grid-row: span 2; font-size: 1.15rem; }
-.meal-button small { color: #d4cddd; font-size: .72rem; }
-.meal-button:hover { background: rgb(247 217 138 / 15%); }
 .share-status { min-height: 1.3em; margin: 12px 0 0; color: #c9c5d0; font-size: .8rem; text-align: center; }
 
 .nutrition-link { display: grid; width: 100%; grid-template-columns: 1fr; gap: 3px; margin: 2px 0 16px; padding: 11px 13px; border: 1px solid rgb(156 120 255 / 60%); border-radius: 11px; background: rgb(156 120 255 / 12%); color: #e4daff; font-weight: 800; text-align: left; }
@@ -198,12 +194,6 @@ legend, .name-field > span { display: block; margin-bottom: 9px; color: #e8e4dc;
 .gap-low { background: rgb(103 163 255 / 20%); color: #a8d0ff; }
 .gap-ok { background: rgb(102 202 142 / 18%); color: #adf0c4; }
 .gap-high { background: rgb(244 145 99 / 20%); color: #ffc3a5; }
-
-.meal-modal-backdrop { position: fixed; z-index: 10; inset: 0; display: grid; padding: 20px; place-items: center; background: rgb(3 5 14 / 83%); }
-.meal-modal { position: relative; width: min(100%, 640px); padding: 23px 16px 16px; border: 1px solid rgb(247 217 138 / 54%); border-radius: 16px; background: #171631; box-shadow: 0 20px 60px rgb(0 0 0 / 50%); }
-.meal-modal h2 { margin-bottom: 14px; color: #fffaf0; }
-.meal-modal video { display: block; width: 100%; max-height: 64vh; border-radius: 8px; background: #050611; }
-.modal-close { position: absolute; top: 9px; right: 9px; display: grid; width: 34px; height: 34px; place-items: center; border: 1px solid rgb(247 242 232 / 52%); border-radius: 50%; background: rgb(12 16 34 / 72%); color: #fffaf0; font-size: 1.5rem; line-height: 1; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; }

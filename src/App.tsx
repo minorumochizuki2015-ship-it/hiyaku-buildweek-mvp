@@ -561,7 +561,6 @@ export function ArrivalScreen({ mission, completion, locale, stats, targetDistan
   const distance = Math.round(stats.distanceMetres)
   const rivalDistance = rivalDistanceAtElapsedSeconds(targetDistanceMetres, availableMinutes, mission.title, stats.elapsedSeconds)
   const [shareStatus, setShareStatus] = useState('')
-  const [mealOpen, setMealOpen] = useState(false)
   const courier = courierCopy(locale)
   const sealData: ArrivalSealData = {
     missionTitle: mission.title,
@@ -631,24 +630,9 @@ export function ArrivalScreen({ mission, completion, locale, stats, targetDistan
         <p className="historical-note"><strong>{courier.gameName}:</strong> {courier.missionCompleteQuote}</p>
         <p className="next-mission">Next dispatch: {completion.nextMissionTeaser}</p>
       </section>
-      <button className="meal-button" type="button" onClick={() => setMealOpen(true)}>
-        <span aria-hidden="true">✦</span> {t(locale, 'arrival.todayMeal')} <small>Watch the courier's reward</small>
-      </button>
       {onNutrition && <button className="nutrition-link" type="button" onClick={onNutrition}>{t(locale, 'arrival.couriersTable')} <small>View nutrition report</small></button>}
       <ArrivalActions onRestart={onRestart} onReturnToTown={onReturnToTown} onShare={() => void share()} />
       <p className="share-status" aria-live="polite">{shareStatus}</p>
-      {mealOpen && (
-        <div className="meal-modal-backdrop" role="presentation" onClick={() => setMealOpen(false)}>
-          <section className="meal-modal" role="dialog" aria-modal="true" aria-labelledby="meal-title" onClick={(event) => event.stopPropagation()}>
-            <button className="modal-close" type="button" aria-label="Close meal video" onClick={() => setMealOpen(false)}>×</button>
-            <p className="eyebrow">COURIER'S REWARD</p>
-            <h2 id="meal-title">{t(locale, 'arrival.todayMeal')}</h2>
-            <video autoPlay muted playsInline controls preload="none">
-              <source src="/assets/meal-reward-kanto.mp4" type="video/mp4" />
-            </video>
-          </section>
-        </div>
-      )}
     </main>
   )
 }
