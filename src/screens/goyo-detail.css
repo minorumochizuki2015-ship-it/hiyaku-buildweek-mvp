@@ -1,4 +1,9 @@
 .goyo-detail {
+  /* Match the app shell's column cap (.screen in styles.css). Without this the
+     screen stretches to the viewport on desktop and the town scene magnifies. */
+  width: min(100%, 540px);
+  margin: 0 auto;
+
   min-height: 100%;
   padding: 12px 14px calc(92px + env(safe-area-inset-bottom));
   background: radial-gradient(120% 48% at 50% 0%, #31205a 0%, #18102e 48%, #0c0a19 100%);
