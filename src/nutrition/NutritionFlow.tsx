@@ -38,6 +38,11 @@ export type NutritionFlowAction =
   | { type: 'setStandard'; standard: NutritionStandard }
   | { type: 'reset' }
 
+export type AchievementSeenAction =
+  | { type: 'reportProduced' }
+  | { type: 'sceneComplete' }
+  | { type: 'recordAnotherMeal' }
+
 export function nutritionFlowReducer(state: NutritionFlowState, action: NutritionFlowAction): NutritionFlowState {
   switch (action.type) {
     case 'next':
@@ -48,6 +53,16 @@ export function nutritionFlowReducer(state: NutritionFlowState, action: Nutritio
       return { ...state, standard: action.standard }
     case 'reset':
       return { ...state, step: 1 }
+  }
+}
+
+export function achievementSeenReducer(_seen: boolean, action: AchievementSeenAction): boolean {
+  switch (action.type) {
+    case 'sceneComplete':
+      return true
+    case 'reportProduced':
+    case 'recordAnotherMeal':
+      return false
   }
 }
 
@@ -74,7 +89,10 @@ const flowLabels = {
 } as const
 
 export function achievementModeFor(report: NutritionReport): 'light' | 'video' {
-  return report.foodScore >= 60 && report.nutrients.some((nutrient) => nutrient.judgment === 'OK') ? 'video' : 'light'
+  // A produced report means the meal reached town. Score still determines the
+  // deltas and facility ranks; it does not make the delivery moment conditional.
+  void report
+  return 'video'
 }
 
 export function foodHallDeltasForReport(report: NutritionReport, previousFoodScore: number, locale: Locale): AchievementDelta[] {
@@ -106,7 +124,7 @@ export function NutritionFlow({
   const [status, setStatus] = useState('')
   const [loading, setLoading] = useState(false)
   const [reportBaselineFoodScore, setReportBaselineFoodScore] = useState(previousFoodScore)
-  const [achievementSeen, setAchievementSeen] = useState(false)
+  const [achievementSeen, dispatchAchievementSeen] = useReducer(achievementSeenReducer, false)
   const [flow, dispatch] = useReducer(nutritionFlowReducer, initialFlowState)
   const labels = flowLabels[locale]
 
@@ -121,7 +139,7 @@ export function NutritionFlow({
       setReportBaselineFoodScore(previousFoodScore)
       setReport(nextReport)
       onReport?.(nextReport)
-      setAchievementSeen(false)
+      dispatchAchievementSeen({ type: 'reportProduced' })
       dispatch({ type: 'reset' })
       setStatus('')
     } catch {
@@ -135,7 +153,7 @@ export function NutritionFlow({
     setReport(null)
     dispatch({ type: 'reset' })
     setStatus('')
-    setAchievementSeen(false)
+    dispatchAchievementSeen({ type: 'recordAnotherMeal' })
   }
 
   if (!report) {
@@ -172,7 +190,7 @@ export function NutritionFlow({
     <TomorrowSuggestScreen key="tomorrow" report={report} locale={locale} onRecordMeal={recordAnotherMeal} onViewGoyo={() => onContinue?.()} onBackToTown={onReturnToTown ?? onBack} />,
   ][flow.step - 1]
   const achievement = flow.step === 3 && !achievementSeen
-    ? <AchievementScene mode={achievementModeFor(report)} deltas={foodHallDeltasForReport(report, reportBaselineFoodScore, locale)} locale={locale} onComplete={() => setAchievementSeen(true)} />
+    ? <AchievementScene mode={achievementModeFor(report)} deltas={foodHallDeltasForReport(report, reportBaselineFoodScore, locale)} locale={locale} onComplete={() => dispatchAchievementSeen({ type: 'sceneComplete' })} />
     : null
 
   return (

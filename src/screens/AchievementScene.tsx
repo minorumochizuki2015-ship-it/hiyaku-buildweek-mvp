@@ -18,7 +18,7 @@ export interface AchievementSceneProps {
   onComplete: () => void
 }
 
-type SceneStage = 'video' | 'light' | 'deltas'
+export type AchievementSceneStage = 'meal-video' | 'town-video' | 'light' | 'deltas'
 
 const copy = {
   en: {
@@ -42,6 +42,44 @@ export const LIGHT_EFFECT_DURATION_MS = 1000
 
 export function resolveAchievementMode(mode: AchievementMode, prefersReducedMotion: boolean): AchievementMode {
   return mode === 'video' && prefersReducedMotion ? 'light' : mode
+}
+
+export function initialAchievementSceneStage(mode: AchievementMode): AchievementSceneStage {
+  return mode === 'video' ? 'meal-video' : 'light'
+}
+
+export function nextAchievementSceneStage(stage: AchievementSceneStage): AchievementSceneStage {
+  switch (stage) {
+    case 'meal-video':
+      return 'town-video'
+    case 'town-video':
+    case 'light':
+      return 'deltas'
+    case 'deltas':
+      return 'deltas'
+  }
+}
+
+export function skipAchievementSequence(stage: AchievementSceneStage): 'deltas' {
+  switch (stage) {
+    case 'meal-video':
+    case 'town-video':
+    case 'light':
+    case 'deltas':
+      return 'deltas'
+  }
+}
+
+export function videoSourceForAchievementStage(stage: AchievementSceneStage): string | null {
+  switch (stage) {
+    case 'meal-video':
+      return '/assets/meal-mikoto-portrait.mp4'
+    case 'town-video':
+      return '/assets/reflection-daily-special.mp4'
+    case 'light':
+    case 'deltas':
+      return null
+  }
 }
 
 function readReducedMotionPreference(): boolean {
@@ -72,7 +110,7 @@ export function AchievementScene({ mode, deltas, locale, onComplete }: Achieveme
 }
 
 function AchievementScenePresentation({ mode, deltas, locale, onComplete }: AchievementSceneProps) {
-  const [stage, setStage] = useState<SceneStage>(() => mode === 'video' ? 'video' : 'light')
+  const [stage, setStage] = useState<AchievementSceneStage>(() => initialAchievementSceneStage(mode))
   const completeOnce = useRef(false)
   const labels = copy[locale]
 
@@ -81,6 +119,20 @@ function AchievementScenePresentation({ mode, deltas, locale, onComplete }: Achi
     completeOnce.current = true
     onComplete()
   }, [onComplete])
+
+  const advanceSequence = useCallback(() => {
+    if (stage === 'town-video') {
+      setStage('deltas')
+      complete()
+      return
+    }
+    setStage((currentStage) => nextAchievementSceneStage(currentStage))
+  }, [stage, complete])
+
+  const skipSequence = useCallback(() => {
+    setStage((currentStage) => skipAchievementSequence(currentStage))
+    complete()
+  }, [complete])
 
   useEffect(() => {
     if (stage !== 'light') return
@@ -93,18 +145,18 @@ function AchievementScenePresentation({ mode, deltas, locale, onComplete }: Achi
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') complete()
+      if (event.key === 'Escape') skipSequence()
     }
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [complete])
+  }, [skipSequence])
 
-  const revealDeltas = () => setStage('light')
-  const showDeltas = stage !== 'video'
+  const videoSource = videoSourceForAchievementStage(stage)
+  const showDeltas = stage === 'light' || stage === 'deltas'
 
   return (
     <section className="achievement-scene" role="dialog" aria-modal="true" aria-labelledby="achievement-scene-title">
-      {stage === 'video' && (
+      {videoSource && (
         <video
           className="achievement-scene-video"
           autoPlay
@@ -112,10 +164,10 @@ function AchievementScenePresentation({ mode, deltas, locale, onComplete }: Achi
           playsInline
           preload="none"
           aria-label={labels.video}
-          onEnded={revealDeltas}
-          onError={revealDeltas}
+          onEnded={advanceSequence}
+          onError={advanceSequence}
         >
-          <source src="/assets/reflection-daily-special.mp4" type="video/mp4" />
+          <source src={videoSource} type="video/mp4" />
         </video>
       )}
 
@@ -141,7 +193,7 @@ function AchievementScenePresentation({ mode, deltas, locale, onComplete }: Achi
         )}
       </div>
 
-      <button className="achievement-scene-skip" type="button" onClick={complete}>
+      <button className="achievement-scene-skip" type="button" onClick={skipSequence}>
         {labels.skip}
       </button>
     </section>

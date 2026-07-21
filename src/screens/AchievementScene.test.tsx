@@ -3,7 +3,11 @@ import { describe, expect, it, vi } from 'vitest'
 import {
   AchievementScene,
   LIGHT_EFFECT_DURATION_MS,
+  initialAchievementSceneStage,
+  nextAchievementSceneStage,
   resolveAchievementMode,
+  skipAchievementSequence,
+  videoSourceForAchievementStage,
 } from './AchievementScene'
 
 describe('AchievementScene', () => {
@@ -15,7 +19,24 @@ describe('AchievementScene', () => {
     expect(LIGHT_EFFECT_DURATION_MS).toBeLessThanOrEqual(1500)
   })
 
-  it('renders a muted, inline, non-looping commemorative video with a visible skip control', () => {
+  it('uses the light sequence for reduced motion instead of either video', () => {
+    expect(initialAchievementSceneStage(resolveAchievementMode('video', true))).toBe('light')
+  })
+
+  it('plays the meal clip before the town clip, with one control that skips the entire sequence', () => {
+    const mealStage = initialAchievementSceneStage('video')
+    const townStage = nextAchievementSceneStage(mealStage)
+
+    expect(mealStage).toBe('meal-video')
+    expect(videoSourceForAchievementStage(mealStage)).toBe('/assets/meal-mikoto-portrait.mp4')
+    expect(townStage).toBe('town-video')
+    expect(videoSourceForAchievementStage(townStage)).toBe('/assets/reflection-daily-special.mp4')
+    expect(nextAchievementSceneStage(townStage)).toBe('deltas')
+    expect(skipAchievementSequence(mealStage)).toBe('deltas')
+    expect(skipAchievementSequence(townStage)).toBe('deltas')
+  })
+
+  it('renders the first muted, inline, non-looping video and one visible skip control', () => {
     const screen = renderToStaticMarkup(
       <AchievementScene mode="video" deltas={[]} locale="en" onComplete={vi.fn()} />,
     )
@@ -24,7 +45,7 @@ describe('AchievementScene', () => {
     expect(screen).toContain('muted=""')
     expect(screen).toContain('playsInline=""')
     expect(screen).toContain('preload="none"')
-    expect(screen).toContain('src="/assets/reflection-daily-special.mp4"')
+    expect(screen).toContain('src="/assets/meal-mikoto-portrait.mp4"')
     expect(screen).not.toContain('loop=""')
     expect(screen).toContain('Skip celebration')
   })

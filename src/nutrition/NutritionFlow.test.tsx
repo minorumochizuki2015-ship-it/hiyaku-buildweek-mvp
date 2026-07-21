@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import type { NutritionReport } from '../../shared/nutrition'
-import { achievementModeFor, foodHallDeltasForReport, nutritionFlowReducer } from './NutritionFlow'
+import {
+  achievementModeFor,
+  achievementSeenReducer,
+  foodHallDeltasForReport,
+  nutritionFlowReducer,
+} from './NutritionFlow'
 
 const report: NutritionReport = {
   description: 'onigiri',
@@ -43,10 +48,25 @@ describe('NutritionFlow', () => {
     expect(state.step).toBe(2)
   })
 
-  it('uses video only for a qualifying meal and otherwise keeps the town reflection light', () => {
+  it('uses video for every successfully produced report, including a poor meal', () => {
     expect(achievementModeFor(report)).toBe('video')
-    expect(achievementModeFor({ ...report, foodScore: 59 })).toBe('light')
-    expect(achievementModeFor({ ...report, nutrients: report.nutrients.map((nutrient) => ({ ...nutrient, judgment: 'Low' as const })) })).toBe('light')
+    expect(achievementModeFor({
+      ...report,
+      foodScore: 0,
+      nutrients: report.nutrients.map((nutrient) => ({ ...nutrient, judgment: 'Low' as const })),
+    })).toBe('video')
+  })
+
+  it('does not replay the scene after it has completed, until another meal report is produced', () => {
+    let seen = achievementSeenReducer(false, { type: 'sceneComplete' })
+    expect(seen).toBe(true)
+
+    // Stepping back through the report leaves the completed scene completed.
+    seen = achievementSeenReducer(seen, { type: 'sceneComplete' })
+    expect(seen).toBe(true)
+
+    seen = achievementSeenReducer(seen, { type: 'reportProduced' })
+    expect(seen).toBe(false)
   })
 
   it('reports only the model-derived food-hall change from the submitted report', () => {
