@@ -89,6 +89,11 @@ export function townReturnDestination(): { state: Extract<JourneyState, 'idle'>;
   return { state: 'idle', selectedTab: 'town' }
 }
 
+/** A bottom-nav choice always leaves the current journey presentation for its tab. */
+export function bottomNavDestination(selectedTab: NavTab): { state: Extract<JourneyState, 'idle'>; selectedTab: NavTab } {
+  return { state: 'idle', selectedTab }
+}
+
 export function LanguageToggle({ locale, onToggle }: { locale: Locale; onToggle: () => void }) {
   return (
     <button
@@ -107,12 +112,11 @@ export function shouldDismissGoyoHelp(key: string): boolean {
   return key === 'Escape'
 }
 
-export function AppShell({ children, locale, onLocaleToggle, selectedTab, missionInProgress, onTabSelect }: {
+export function AppShell({ children, locale, onLocaleToggle, selectedTab, onTabSelect }: {
   children: ReactNode
   locale: Locale
   onLocaleToggle: () => void
   selectedTab: NavTab
-  missionInProgress: boolean
   onTabSelect: (tab: NavTab) => void
 }) {
   const contentRef = useRef<HTMLDivElement>(null)
@@ -147,16 +151,13 @@ export function AppShell({ children, locale, onLocaleToggle, selectedTab, missio
       </div>
       <nav className="bottom-nav" aria-label={t(locale, 'nav.aria')}>
         {NAV_ITEMS.map((item) => {
-          const locked = missionInProgress && item.id !== 'dispatch'
           return (
             <div className="nav-item-group" key={item.id}>
               <button
                 className={`nav-item ${selectedTab === item.id ? 'is-active' : ''}`}
                 type="button"
                 onClick={() => onTabSelect(item.id)}
-                disabled={locked}
                 aria-current={selectedTab === item.id ? 'page' : undefined}
-                title={locked ? (locale === 'en' ? 'Finish or pause the active mission before leaving Dispatch.' : '任務を終えるか一時停止してから、任務画面を離れてください。') : undefined}
               >
                 <span className="nav-icon" aria-hidden="true">{item.icon}</span>
                 <span className="nav-label">{t(locale, item.label)}</span>
@@ -718,6 +719,12 @@ export default function App() {
     setSelectedTab(destination.selectedTab)
   }
 
+  const selectBottomNavTab = (tab: NavTab) => {
+    const destination = bottomNavDestination(tab)
+    setSelectedTab(destination.selectedTab)
+    setState(destination.state)
+  }
+
   const generateMission = async (input: MissionInput, selectedMovementMode: MovementMode) => {
     setState('generating')
     try {
@@ -737,7 +744,6 @@ export default function App() {
     }
   }
 
-  const missionInProgress = state === 'ready' || state === 'active' || state === 'paused' || state === 'completing'
   const recordMeal = (report: NutritionReport) => {
     setLatestNutritionReport(report)
     setSessionMeals((meals) => [...meals, report])
@@ -857,8 +863,7 @@ export default function App() {
       locale={locale}
       onLocaleToggle={() => setLocale((current) => current === 'en' ? 'ja' : 'en')}
       selectedTab={selectedTab}
-      missionInProgress={missionInProgress}
-      onTabSelect={setSelectedTab}
+      onTabSelect={selectBottomNavTab}
     >
       {content}
     </AppShell>

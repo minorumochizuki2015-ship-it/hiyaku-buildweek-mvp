@@ -1,7 +1,6 @@
-import { Children, isValidElement, type ReactElement, type ReactNode } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it, vi } from 'vitest'
-import { AppShell, ArrivalActions, ArrivalScreen, DispatchScreen, GoyoTabContent, JourneyScreen, LanguageToggle, JOURNEY_PRESENTATION_STATES, isJourneyScreenState, journeyPresentationFor, journeyStateAfterGoyoAccept, nutritionStateFor, shouldDismissGoyoHelp, townReturnDestination, type JourneyState } from './App'
+import { AppShell, ArrivalScreen, bottomNavDestination, DispatchScreen, GoyoTabContent, JourneyScreen, LanguageToggle, JOURNEY_PRESENTATION_STATES, isJourneyScreenState, journeyPresentationFor, journeyStateAfterGoyoAccept, nutritionStateFor, shouldDismissGoyoHelp, townReturnDestination, type JourneyState, type NavTab } from './App'
 import { runScore, totalScore } from '../shared/activity'
 import { NutritionFlow } from './nutrition/NutritionFlow'
 import { checkpointRouteState } from './checkpointRoute'
@@ -14,6 +13,7 @@ import worker from '../worker/index'
 import { TownHomeScreen } from './screens/TownHomeScreen'
 import { WorkoutEntryScreen } from './screens/WorkoutEntryScreen'
 import { GoyoDetailScreen } from './screens/GoyoDetailScreen'
+import { RecordBookScreen, type RecordBookRun } from './screens/RecordBookScreen'
 
 const mission = mockGenerateMission({ availableMinutes: 10, energy: 'Steady', courierId: MIKOTO.id, displayName: 'Ada' }, 'en')
 const CJK_RUN = /[\u3040-\u30ff\u3400-\u9fff\uf900-\ufaff]+/gu
@@ -22,15 +22,6 @@ const ENGLISH_CJK_ALLOWLIST = new Set(['日本語', '飛', '御'])
 function expectOnlyAllowedEnglishCjk(rendered: string): void {
   const cjkRuns = translateText(rendered, 'en').match(CJK_RUN) ?? []
   expect(cjkRuns.filter((run) => !ENGLISH_CJK_ALLOWLIST.has(run))).toEqual([])
-}
-
-function findButtonByText(node: ReactNode, label: string): ReactElement<{ onClick?: () => void }> | undefined {
-  if (!isValidElement(node)) return undefined
-  const element = node as ReactElement<{ children?: ReactNode; onClick?: () => void }>
-  if (element.type === 'button' && element.props.children === label) return element
-  return Children.toArray(element.props.children)
-    .map((child) => findButtonByText(child, label))
-    .find((button): button is ReactElement<{ onClick?: () => void }> => button !== undefined)
 }
 
 describe('HIKYAKU static screens', () => {
@@ -147,7 +138,6 @@ describe('HIKYAKU static screens', () => {
       locale: 'en' as const,
       onLocaleToggle: () => undefined,
       selectedTab: 'dispatch' as const,
-      missionInProgress: false,
       onTabSelect: () => undefined,
     }
     const screens = [
@@ -169,9 +159,9 @@ describe('HIKYAKU static screens', () => {
 })
 
 describe('NAVSHELL1', () => {
-  it('renders all five locked navigation tabs in their required order', () => {
+  it('renders all five persistent navigation tabs in their required order', () => {
     const shell = renderToStaticMarkup(
-      <AppShell locale="en" onLocaleToggle={() => undefined} selectedTab="dispatch" missionInProgress={false} onTabSelect={() => undefined}>
+      <AppShell locale="en" onLocaleToggle={() => undefined} selectedTab="dispatch" onTabSelect={() => undefined}>
         <div>Mission content</div>
       </AppShell>,
     )
@@ -186,13 +176,14 @@ describe('NAVSHELL1', () => {
     }
     expect(shell).toContain('aria-label="Explain Goyo"')
     expect(shell).toContain('▲')
+    expect(shell).not.toContain('disabled=""')
     expect(shell.indexOf('app-shell-header')).toBeLessThan(shell.indexOf('app-shell-content'))
     expect(t('en', 'nav.goyoHelp.copy')).toBe('Goyo — today\'s courier duty from the Nihonbashi headquarters.')
   })
 
   it('uses the frozen Japanese labels and recognizes Escape as the Goyo-help dismiss key', () => {
     const shell = renderToStaticMarkup(
-      <AppShell locale="ja" onLocaleToggle={() => undefined} selectedTab="dispatch" missionInProgress={false} onTabSelect={() => undefined}>
+      <AppShell locale="ja" onLocaleToggle={() => undefined} selectedTab="dispatch" onTabSelect={() => undefined}>
         <div>任務内容</div>
       </AppShell>,
     )
@@ -231,11 +222,12 @@ describe('NAVSHELL1', () => {
 })
 
 describe('core journey render precedence', () => {
-  it('renders idle → accept → journey → end → arrival → Return to town with the run-earned street rank', () => {
+  it('lets bottom-nav choices leave arrival and nutrition while preserving the completed run rank', () => {
     let state: JourneyState = 'idle'
-    let selectedTab = 'dispatch'
+    let selectedTab: NavTab = 'dispatch'
     let issuedMission: typeof mission | null = null
     let completion: ReturnType<typeof mockCompleteMission> | null = null
+    const sessionRuns: RecordBookRun[] = []
     const stats = { elapsedSeconds: 100, progress: 100, distanceMetres: 800 }
     const targetDistanceMetres = 800
 
@@ -249,9 +241,15 @@ describe('core journey render precedence', () => {
       state = destination.state
       selectedTab = destination.selectedTab
     }
+    const selectBottomNavTab = (tab: NavTab) => {
+      const destination = bottomNavDestination(tab)
+      state = destination.state
+      selectedTab = destination.selectedTab
+    }
     const endMission = () => { state = 'completing' }
     const receiveCompletion = () => {
       completion = mockCompleteMission({ distanceMeters: 800, durationSeconds: 100, completionPercent: 100, missionTitle: mission.title, courierId: mission.courierId }, 'en')
+      sessionRuns.push({ title: mission.title, distanceMetres: stats.distanceMetres, durationSeconds: stats.elapsedSeconds, rank: completion.rank })
       state = 'completed'
     }
     const openNutrition = () => { state = 'nutrition' }
@@ -283,6 +281,9 @@ describe('core journey render precedence', () => {
             onOpenGoyo={() => { selectedTab = 'dispatch' }}
           />,
         )
+      }
+      if (selectedTab === 'records') {
+        return renderToStaticMarkup(<RecordBookScreen runs={sessionRuns} meals={[]} locale="en" onOpenGoyo={() => { selectedTab = 'dispatch' }} />)
       }
       return renderToStaticMarkup(
         <GoyoTabContent
@@ -321,12 +322,14 @@ describe('core journey render precedence', () => {
     expect(arrival).toContain('ARRIVAL RECORDED')
     expect(arrival).toContain('Return to town')
 
-    const returnButton = findButtonByText(
-      ArrivalActions({ onRestart: () => undefined, onReturnToTown: returnToTown, onShare: () => undefined }),
-      'Return to town',
-    )
-    expect(returnButton).toBeDefined()
-    returnButton?.props.onClick?.()
+    selectBottomNavTab('records')
+    expect(state).toBe('idle')
+    expect(selectedTab).toBe('records')
+    expect(renderCurrentScreen()).toContain('Record book')
+    expect(renderCurrentScreen()).toContain('800 m')
+
+    state = 'nutrition'
+    selectBottomNavTab('town')
     expect(state).toBe('idle')
     expect(selectedTab).toBe('town')
     const grownTown = renderCurrentScreen()
