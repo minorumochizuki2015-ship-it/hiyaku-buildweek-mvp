@@ -117,19 +117,19 @@ const missionSchema = {
   additionalProperties: false,
   required: ['title', 'briefing', 'milestones', 'completionStyle'],
   properties: {
-    title: { type: 'string', minLength: 1 },
-    briefing: { type: 'string', minLength: 1 },
+    title: { type: 'string' },
+    briefing: { type: 'string' },
     milestones: {
       type: 'object',
       additionalProperties: false,
       required: ['25', '50', '75'],
       properties: {
-        25: { type: 'string', minLength: 1 },
-        50: { type: 'string', minLength: 1 },
-        75: { type: 'string', minLength: 1 },
+        25: { type: 'string' },
+        50: { type: 'string' },
+        75: { type: 'string' },
       },
     },
-    completionStyle: { type: 'string', minLength: 1 },
+    completionStyle: { type: 'string' },
   },
 }
 
@@ -138,8 +138,8 @@ const completionSchema = {
   additionalProperties: false,
   required: ['epilogue', 'nextMissionTeaser'],
   properties: {
-    epilogue: { type: 'string', minLength: 1 },
-    nextMissionTeaser: { type: 'string', minLength: 1 },
+    epilogue: { type: 'string' },
+    nextMissionTeaser: { type: 'string' },
   },
 }
 

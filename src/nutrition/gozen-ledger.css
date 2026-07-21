@@ -28,6 +28,8 @@
 .g07-pill { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: .62rem; font-weight: 800; white-space: nowrap; }
 .g07-pill-ok { border: 1px solid rgb(96 190 140 / 55%); background: rgb(96 190 140 / 22%); color: #8fe0b6; }
 .g07-pill-gold { border: 1px solid rgb(214 178 96 / 55%); background: rgb(214 178 96 / 20%); color: #f0d79b; }
+.g07-ai-source-status { display: grid; justify-items: end; gap: 3px; }
+.g07-ai-source-status small { max-width: 165px; color: #d5c8ea; font-size: .55rem; font-weight: 600; line-height: 1.3; }
 
 .g07-log-details { display: grid; gap: 7px; }
 .g07-log-details .g07-key-values { gap: 5px; }

@@ -44,6 +44,11 @@ const copy = {
     status: '状態',
     source: 'ソース',
     disclaimer: '※推奨値は性別・年齢・活動量により異なります。これは一般的な参考です。基準は 日本 / FDA / EU / 国際 に切替できます。',
+    aiNotNeeded: 'GPT-5.6は不要 — Open Food Factsが全項目をカバーしました',
+    aiSucceeded: (estimatedCount: number) => `GPT-5.6が6項目中${estimatedCount}項目を推定しました`,
+    aiNoKey: 'GPT-5.6は利用できません — カテゴリ推定を表示しています',
+    aiFailed: (reason: string) => `GPT-5.6は利用できません（${reason}） — カテゴリ推定を表示しています`,
+    aiUnknown: 'GPT-5.6の試行状態は不明です（旧レスポンス）',
     chartTitle: '栄養のバランスチャート',
     chartLabel: '栄養バランスの六角レーダーチャート',
     today: '今日の傾向',
@@ -67,6 +72,11 @@ const copy = {
     status: 'Status',
     source: 'Source',
     disclaimer: 'Reference values vary by sex, age, and activity level. They are general guidance only. Switch between Japan, FDA, EU, and International standards.',
+    aiNotNeeded: 'GPT-5.6 was not needed — Open Food Facts covered all values',
+    aiSucceeded: (estimatedCount: number) => `GPT-5.6 estimated ${estimatedCount} of 6 values`,
+    aiNoKey: 'GPT-5.6 unavailable — showing category estimates',
+    aiFailed: (reason: string) => `GPT-5.6 unavailable (${reason}) — showing category estimates`,
+    aiUnknown: 'GPT-5.6 attempt status unavailable (older response)',
     chartTitle: 'Nutrition balance chart',
     chartLabel: 'Six-axis nutrition balance radar chart',
     today: 'Today’s trend',
@@ -81,6 +91,16 @@ const copy = {
     trendSuffix: 'reference',
   },
 } as const
+
+function aiAttemptLabel(report: NutritionReport, locale: Locale): string {
+  const text = copy[locale]
+  const attempt = report.aiAttempt
+  if (!attempt) return text.aiUnknown
+  if (attempt.status === 'not-needed') return text.aiNotNeeded
+  if (attempt.status === 'succeeded') return text.aiSucceeded(attempt.estimatedCount)
+  if (attempt.status === 'skipped-no-api-key') return text.aiNoKey
+  return text.aiFailed(attempt.reason)
+}
 
 function formatAmount(value: number): string {
   return Number.isInteger(value) ? String(value) : String(Math.round(value * 100) / 100)
@@ -173,6 +193,7 @@ export function NutrientCompareScreen({ report, standard, onStandardChange, loca
             ))}
           </tbody>
         </table>
+        <p className="g07-ai-attempt-status" data-testid="g07-ai-attempt-status">{aiAttemptLabel(report, locale)}</p>
         <p className="g07-disclaimer">{text.disclaimer}</p>
       </section>
 

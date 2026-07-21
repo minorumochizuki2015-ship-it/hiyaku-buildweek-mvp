@@ -9,6 +9,7 @@ const report: NutritionReport = {
   productName: 'Rice bowl',
   source: 'hybrid',
   foodScore: 82,
+  aiAttempt: { status: 'succeeded', estimatedCount: 2 },
   nutrients: [
     { key: 'energy', amount: 688, source: 'open-food-facts', judgment: 'OK' },
     { key: 'protein', amount: 24.1, source: 'open-food-facts', judgment: 'OK' },
@@ -35,6 +36,7 @@ describe('GozenLedgerScreen', () => {
 
     expect(screen).toContain('4 / 6')
     expect(screen).toContain('複合ソース')
+    expect(screen).toContain('GPT-5.6が6項目中2項目を推定')
     expect(screen).toContain('整え札')
   })
 
@@ -63,6 +65,7 @@ describe('GozenLedgerScreen', () => {
     expect(english).toContain('Today’s meal score')
     expect(english).toContain('Distance')
     expect(english).toContain('Duration')
+    expect(english).toContain('GPT-5.6 estimated 2 of 6 values')
     expect(english).not.toContain('御膳帳 Premium')
   })
 

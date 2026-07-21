@@ -4,6 +4,7 @@ import {
   type GapJudgment,
   type NutrientEstimate,
   type NutrientKey,
+  type NutritionAiAttempt,
   type NutrientSource,
   type NutritionReport,
   type NutritionRequest,
@@ -25,6 +26,11 @@ interface OpenFoodFactsSearch {
 
 interface AiEstimate {
   nutrients: Array<{ key: NutrientKey; amount: number }>
+}
+
+interface AiEstimateResult {
+  attempt: NutritionAiAttempt
+  values: Partial<Record<NutrientKey, number>>
 }
 
 const openAiUrl = 'https://api.openai.com/v1/chat/completions'
@@ -164,7 +170,7 @@ function chatContent(value: unknown): string | null {
   return typeof content === 'string' ? content : null
 }
 
-function aiRequest(input: NutritionRequest, missingKeys: readonly NutrientKey[]): unknown {
+export function aiRequest(input: NutritionRequest, missingKeys: readonly NutrientKey[]): unknown {
   return {
     model: openAiModel,
     messages: [
@@ -189,15 +195,15 @@ function aiRequest(input: NutritionRequest, missingKeys: readonly NutrientKey[])
           properties: {
             nutrients: {
               type: 'array',
-              minItems: 1,
-              maxItems: 6,
+              // Strict Structured Outputs rejects these array/number constraints; isAiEstimate
+              // enforces the exact keys, length, uniqueness, and non-negative finite amounts in code.
               items: {
                 type: 'object',
                 additionalProperties: false,
                 required: ['key', 'amount'],
                 properties: {
                   key: { type: 'string', enum: NUTRIENT_DEFINITIONS.map((nutrient) => nutrient.key) },
-                  amount: { type: 'number', minimum: 0 },
+                  amount: { type: 'number' },
                 },
               },
             },
@@ -208,30 +214,59 @@ function aiRequest(input: NutritionRequest, missingKeys: readonly NutrientKey[])
   }
 }
 
-async function estimateMissingWithAi(env: Env, input: NutritionRequest, missingKeys: readonly NutrientKey[]): Promise<Partial<Record<NutrientKey, number>> | null> {
-  if (!env.OPENAI_API_KEY || missingKeys.length === 0) return null
-  const response = await fetchWithRetry(openAiUrl, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json', authorization: `Bearer ${env.OPENAI_API_KEY}` },
-    body: JSON.stringify(aiRequest(input, missingKeys)),
-  })
-  if (!response) return null
-  try {
-    const content = chatContent(await response.json())
-    if (!content) return null
-    const parsed: unknown = JSON.parse(content)
-    if (!isAiEstimate(parsed, missingKeys)) return null
-    return Object.fromEntries(parsed.nutrients.map((nutrient) => [nutrient.key, roundAmount(nutrient.amount)])) as Partial<Record<NutrientKey, number>>
-  } catch {
-    return null
+async function estimateMissingWithAi(env: Env, input: NutritionRequest, missingKeys: readonly NutrientKey[]): Promise<AiEstimateResult> {
+  if (!env.OPENAI_API_KEY) return { attempt: { status: 'skipped-no-api-key', estimatedCount: 0 }, values: {} }
+
+  let failureReason = 'request failed'
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    const controller = new AbortController()
+    let timedOut = false
+    const timeout = setTimeout(() => {
+      timedOut = true
+      controller.abort()
+    }, timeoutMs)
+    try {
+      const response = await fetch(openAiUrl, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', authorization: `Bearer ${env.OPENAI_API_KEY}` },
+        body: JSON.stringify(aiRequest(input, missingKeys)),
+        signal: controller.signal,
+      })
+      if (!response.ok) {
+        failureReason = `HTTP ${response.status}`
+        continue
+      }
+      const content = chatContent(await response.json())
+      if (!content) {
+        failureReason = 'invalid response'
+        continue
+      }
+      const parsed: unknown = JSON.parse(content)
+      if (!isAiEstimate(parsed, missingKeys)) {
+        failureReason = 'invalid response'
+        continue
+      }
+      return {
+        attempt: { status: 'succeeded', estimatedCount: parsed.nutrients.length },
+        values: Object.fromEntries(parsed.nutrients.map((nutrient) => [nutrient.key, roundAmount(nutrient.amount)])) as Partial<Record<NutrientKey, number>>,
+      }
+    } catch {
+      failureReason = timedOut ? 'request timed out' : 'request failed'
+    } finally {
+      clearTimeout(timeout)
+    }
   }
+  return { attempt: { status: 'failed', estimatedCount: 0, reason: failureReason }, values: {} }
 }
 
 export async function buildNutritionReport(input: NutritionRequest, env: Env): Promise<NutritionReport> {
   const product = await findOpenFoodFactsProduct(input.description)
   const offValues = product ? valuesFromProduct(product, input.amountGrams) : {}
   const missingKeys = NUTRIENT_DEFINITIONS.filter((nutrient) => offValues[nutrient.key] === undefined).map((nutrient) => nutrient.key)
-  const aiValues = await estimateMissingWithAi(env, input, missingKeys)
+  const aiResult: AiEstimateResult = missingKeys.length === 0
+    ? { attempt: { status: 'not-needed', estimatedCount: 0 } as const, values: {} }
+    : await estimateMissingWithAi(env, input, missingKeys)
+  const aiValues = aiResult.values
   const fallbackScale = input.amountGrams / 100
 
   const nutrients: NutrientEstimate[] = NUTRIENT_DEFINITIONS.map((definition) => {
@@ -251,5 +286,6 @@ export async function buildNutritionReport(input: NutritionRequest, env: Env): P
     source,
     nutrients,
     foodScore: foodScoreFor(Object.fromEntries(nutrients.map((nutrient) => [nutrient.key, nutrient.amount])) as Record<NutrientKey, number>),
+    aiAttempt: aiResult.attempt,
   }
 }

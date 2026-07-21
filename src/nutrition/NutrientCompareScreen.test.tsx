@@ -9,6 +9,7 @@ const report: NutritionReport = {
   productName: 'Test bowl',
   source: 'hybrid',
   foodScore: 82,
+  aiAttempt: { status: 'succeeded', estimatedCount: 2 },
   nutrients: [
     { key: 'energy', amount: 688, source: 'open-food-facts', judgment: 'OK' },
     { key: 'protein', amount: 24.1, source: 'open-food-facts', judgment: 'OK' },
@@ -35,6 +36,7 @@ describe('NutrientCompareScreen', () => {
     expect(markup).toContain('<strong>バーコード</strong>')
     expect(markup).toContain('AI推定')
     expect(markup).toContain('カテゴリ推定')
+    expect(markup).toContain('GPT-5.6が6項目中2項目を推定しました')
   })
 
   it('uses the selected standard for the reference-value column', () => {
@@ -55,5 +57,6 @@ describe('NutrientCompareScreen', () => {
     expect(english).toContain('Nutrition reference comparison')
     expect(english).toContain('Nutrition balance chart')
     expect(english).toContain('Achieved')
+    expect(english).toContain('GPT-5.6 estimated 2 of 6 values')
   })
 })

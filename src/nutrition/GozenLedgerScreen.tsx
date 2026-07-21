@@ -44,6 +44,11 @@ const copy = {
     category: 'カテゴリ推定',
     measuredAi: '実測+AI',
     mixed: '複合ソース',
+    aiNotNeeded: 'GPT-5.6は不要 — Open Food Factsが全項目をカバー',
+    aiSucceeded: (estimatedCount: number) => `GPT-5.6が6項目中${estimatedCount}項目を推定`,
+    aiNoKey: 'GPT-5.6は利用できません — カテゴリ推定を表示',
+    aiFailed: (reason: string) => `GPT-5.6は利用できません（${reason}） — カテゴリ推定を表示`,
+    aiUnknown: 'GPT-5.6の試行状態は不明（旧レスポンス）',
   },
   en: {
     title: 'Premium Meal Ledger',
@@ -78,6 +83,11 @@ const copy = {
     category: 'Category estimate',
     measuredAi: 'Measured + AI',
     mixed: 'Mixed sources',
+    aiNotNeeded: 'GPT-5.6 was not needed — Open Food Facts covered all values',
+    aiSucceeded: (estimatedCount: number) => `GPT-5.6 estimated ${estimatedCount} of 6 values`,
+    aiNoKey: 'GPT-5.6 unavailable — showing category estimates',
+    aiFailed: (reason: string) => `GPT-5.6 unavailable (${reason}) — showing category estimates`,
+    aiUnknown: 'GPT-5.6 attempt status unavailable (older response)',
   },
 } as const
 
@@ -91,6 +101,16 @@ function sourceLabel(nutrients: readonly NutrientEstimate[], locale: Locale): st
   }
   if (sources.size === 2 && sources.has('open-food-facts') && sources.has('gpt-5.6-sol')) return labels.measuredAi
   return labels.mixed
+}
+
+function aiAttemptLabel(report: NutritionReport, locale: Locale): string {
+  const labels = copy[locale]
+  const attempt = report.aiAttempt
+  if (!attempt) return labels.aiUnknown
+  if (attempt.status === 'not-needed') return labels.aiNotNeeded
+  if (attempt.status === 'succeeded') return labels.aiSucceeded(attempt.estimatedCount)
+  if (attempt.status === 'skipped-no-api-key') return labels.aiNoKey
+  return labels.aiFailed(attempt.reason)
 }
 
 function nutrientNames(nutrients: readonly NutrientEstimate[], judgment: NutrientEstimate['judgment'], locale: Locale): string {
@@ -147,7 +167,13 @@ export function GozenLedgerScreen({ report, distanceMetres, elapsedSeconds, loca
           <dl className="g07-key-values">
             <div><dt>{labels.accuracy}</dt><dd className="g07-pill g07-pill-ok">{labels.high}</dd></div>
             <div><dt>{labels.achievements}</dt><dd className="g07-pill g07-pill-gold">{achieved} / {NUTRIENT_DEFINITIONS.length}</dd></div>
-            <div><dt>{labels.source}</dt><dd className="g07-pill g07-pill-gold">{sourceLabel(report.nutrients, locale)}</dd></div>
+            <div>
+              <dt>{labels.source}</dt>
+              <dd className="g07-ai-source-status">
+                <span className="g07-pill g07-pill-gold">{sourceLabel(report.nutrients, locale)}</span>
+                <small>{aiAttemptLabel(report, locale)}</small>
+              </dd>
+            </div>
             <div><dt>{labels.town}</dt><dd className="g07-pill g07-pill-ok">{townState}</dd></div>
           </dl>
         </div>

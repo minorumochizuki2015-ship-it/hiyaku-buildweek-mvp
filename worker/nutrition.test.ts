@@ -1,7 +1,7 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { NUTRIENT_DEFINITIONS, SINGLE_ITEM_DAILY_REFERENCE_FRACTION, type NutrientKey } from '../shared/nutrition'
-import { foodScoreFor, judgeGap } from './nutrition'
+import { isNutritionReport, NUTRIENT_DEFINITIONS, SINGLE_ITEM_DAILY_REFERENCE_FRACTION, type NutrientKey } from '../shared/nutrition'
+import { buildNutritionReport, foodScoreFor, judgeGap } from './nutrition'
 
 type Amounts = Record<NutrientKey, number>
 
@@ -20,6 +20,19 @@ const balancedSingleItem: Amounts = Object.fromEntries(
     nutrient.referenceValue * SINGLE_ITEM_DAILY_REFERENCE_FRACTION,
   ]),
 ) as Amounts
+
+function openFoodFactsMiss(): Response {
+  return new Response(JSON.stringify({ page_count: 0, products: [] }), { status: 200 })
+}
+
+function validAiResponse(): Response {
+  const nutrients = NUTRIENT_DEFINITIONS.map((nutrient, index) => ({ key: nutrient.key, amount: index + 1 }))
+  return new Response(JSON.stringify({ choices: [{ message: { content: JSON.stringify({ nutrients }) } }] }), { status: 200 })
+}
+
+afterEach(() => {
+  vi.unstubAllGlobals()
+})
 
 describe('nutrition scoring', () => {
   it('uses the single-item reference for the status pills', () => {
@@ -47,5 +60,66 @@ describe('nutrition scoring', () => {
     expect(foodScoreFor(balancedSingleItem)).toBeGreaterThan(
       scores.find(({ name }) => name === 'Coca-Cola')!.score,
     )
+  })
+})
+
+describe('nutrition AI attempt reporting', () => {
+  it('reports that AI was skipped when no API key is configured', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(openFoodFactsMiss())
+    vi.stubGlobal('fetch', fetchMock)
+
+    const report = await buildNutritionReport({ description: 'unlisted meal', amountGrams: 100 }, {})
+
+    expect(report.aiAttempt).toEqual({ status: 'skipped-no-api-key', estimatedCount: 0 })
+    expect(report.nutrients.every((nutrient) => nutrient.source === 'deterministic-fallback')).toBe(true)
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('reports an AI HTTP failure and keeps deterministic fallback values honest', async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(openFoodFactsMiss())
+      .mockResolvedValue(new Response('', { status: 400 }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    const report = await buildNutritionReport({ description: 'unlisted meal', amountGrams: 100 }, { OPENAI_API_KEY: 'test-key' })
+
+    expect(report.aiAttempt).toEqual({ status: 'failed', estimatedCount: 0, reason: 'HTTP 400' })
+    expect(report.nutrients.every((nutrient) => nutrient.source === 'deterministic-fallback')).toBe(true)
+    expect(fetchMock).toHaveBeenCalledTimes(3)
+  })
+
+  it('reports AI success only when validated values supply every missing nutrient', async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(openFoodFactsMiss())
+      .mockResolvedValueOnce(validAiResponse())
+    vi.stubGlobal('fetch', fetchMock)
+
+    const report = await buildNutritionReport({ description: 'unlisted meal', amountGrams: 100 }, { OPENAI_API_KEY: 'test-key' })
+    const requestBody = JSON.parse(String((fetchMock.mock.calls[1]![1] as RequestInit).body)) as Record<string, unknown>
+    const schema = JSON.stringify((requestBody.response_format as { json_schema: { schema: unknown } }).json_schema.schema)
+
+    expect(report.aiAttempt).toEqual({ status: 'succeeded', estimatedCount: NUTRIENT_DEFINITIONS.length })
+    expect(report.nutrients.every((nutrient) => nutrient.source === 'gpt-5.6-sol')).toBe(true)
+    expect(schema).not.toContain('minItems')
+    expect(schema).not.toContain('maxItems')
+    expect(schema).not.toContain('minimum')
+  })
+
+  it('accepts an older nutrition report without AI attempt status', () => {
+    const legacyReport = {
+      description: 'Legacy meal',
+      amountGrams: 100,
+      productName: null,
+      source: 'deterministic-fallback',
+      foodScore: 50,
+      nutrients: NUTRIENT_DEFINITIONS.map((nutrient) => ({
+        key: nutrient.key,
+        amount: 1,
+        source: 'deterministic-fallback',
+        judgment: 'Low',
+      })),
+    }
+
+    expect(isNutritionReport(legacyReport)).toBe(true)
   })
 })

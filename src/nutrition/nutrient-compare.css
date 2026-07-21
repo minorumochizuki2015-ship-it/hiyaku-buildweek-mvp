@@ -158,6 +158,14 @@
   line-height: 1.5;
 }
 
+.g07-ai-attempt-status {
+  margin: 7px 0 0;
+  color: #f0d79b;
+  font-size: .56rem;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
 .g07-radar-panel {
   padding: 10px 11px;
 }

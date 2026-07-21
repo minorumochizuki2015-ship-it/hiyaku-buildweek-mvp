@@ -51,6 +51,12 @@ export interface NutrientEstimate {
   judgment: GapJudgment
 }
 
+export type NutritionAiAttempt =
+  | { status: 'not-needed'; estimatedCount: 0 }
+  | { status: 'succeeded'; estimatedCount: number }
+  | { status: 'skipped-no-api-key'; estimatedCount: 0 }
+  | { status: 'failed'; estimatedCount: 0; reason: string }
+
 export interface NutritionReport {
   description: string
   amountGrams: number
@@ -58,6 +64,8 @@ export interface NutritionReport {
   source: NutritionSource
   nutrients: NutrientEstimate[]
   foodScore: number
+  // Optional so clients can continue to read reports created before AI attempt status was added.
+  aiAttempt?: NutritionAiAttempt
 }
 
 function isNutrientKey(value: unknown): value is NutrientKey {
@@ -70,6 +78,18 @@ function isNutrientSource(value: unknown): value is NutrientSource {
 
 function isGapJudgment(value: unknown): value is GapJudgment {
   return value === 'Low' || value === 'OK' || value === 'High'
+}
+
+function isNutritionAiAttempt(value: unknown): value is NutritionAiAttempt {
+  if (!value || typeof value !== 'object') return false
+  const attempt = value as Record<string, unknown>
+  if (attempt.status === 'succeeded') {
+    return typeof attempt.estimatedCount === 'number' && Number.isInteger(attempt.estimatedCount) && attempt.estimatedCount > 0 && attempt.estimatedCount <= NUTRIENT_DEFINITIONS.length
+  }
+  if (attempt.status === 'failed') {
+    return attempt.estimatedCount === 0 && typeof attempt.reason === 'string' && attempt.reason.trim().length > 0 && attempt.reason.length <= 80
+  }
+  return (attempt.status === 'not-needed' || attempt.status === 'skipped-no-api-key') && attempt.estimatedCount === 0
 }
 
 export function isNutritionRequest(value: unknown): value is NutritionRequest {
@@ -92,6 +112,7 @@ export function isNutritionReport(value: unknown): value is NutritionReport {
   if (!isNutritionRequest(report) || (report.productName !== null && typeof report.productName !== 'string')) return false
   if (report.source !== 'open-food-facts' && report.source !== 'gpt-5.6-sol' && report.source !== 'deterministic-fallback' && report.source !== 'hybrid') return false
   if (typeof report.foodScore !== 'number' || !Number.isFinite(report.foodScore) || report.foodScore < 0 || report.foodScore > 100) return false
+  if (report.aiAttempt !== undefined && !isNutritionAiAttempt(report.aiAttempt)) return false
   if (!Array.isArray(report.nutrients) || report.nutrients.length !== NUTRIENT_DEFINITIONS.length) return false
   const seen = new Set<NutrientKey>()
   return report.nutrients.every((nutrient) => {
