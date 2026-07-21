@@ -44,7 +44,7 @@ describe('AchievementScene', () => {
     expect(screen).toContain('<video')
     expect(screen).toContain('muted=""')
     expect(screen).toContain('playsInline=""')
-    expect(screen).toContain('preload="none"')
+    expect(screen).toContain('preload="auto"')
     expect(screen).toContain('src="/assets/meal-mikoto-portrait.mp4"')
     expect(screen).not.toContain('loop=""')
     expect(screen).toContain('Skip celebration')

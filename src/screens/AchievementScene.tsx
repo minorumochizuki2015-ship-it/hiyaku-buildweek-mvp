@@ -158,17 +158,20 @@ function AchievementScenePresentation({ mode, deltas, locale, onComplete }: Achi
     <section className="achievement-scene" role="dialog" aria-modal="true" aria-labelledby="achievement-scene-title">
       {videoSource && (
         <video
+          // Keyed by stage so React remounts the element between clips. With a
+          // <source> child the browser will not reload on a src change, so the
+          // second clip never starts; a fresh element re-triggers autoPlay.
+          key={stage}
           className="achievement-scene-video"
+          src={videoSource}
           autoPlay
           muted
           playsInline
-          preload="none"
+          preload="auto"
           aria-label={labels.video}
           onEnded={advanceSequence}
           onError={advanceSequence}
-        >
-          <source src={videoSource} type="video/mp4" />
-        </video>
+        />
       )}
 
       <div className={`achievement-scene-content ${showDeltas ? 'achievement-scene-content-visible' : ''}`}>
