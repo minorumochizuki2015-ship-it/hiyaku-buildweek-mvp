@@ -59,15 +59,11 @@ h2 { font-size: 1.7rem; line-height: 1.3; }
 fieldset { min-width: 0; margin: 0; padding: 0; border: 0; }
 legend, .name-field > span { display: block; margin-bottom: 9px; color: #e8e4dc; font-size: .78rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
 .courier-picker { display: flex; gap: 9px; padding: 1px 1px 8px; overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x proximity; scrollbar-color: #725da5 transparent; }
-.courier-choice { position: relative; flex: 0 0 172px; scroll-snap-align: start; }
-.courier-choice input { position: absolute; opacity: 0; }
 .courier-card { display: grid; min-height: 126px; align-content: start; gap: 5px; padding: 12px; border: 1px solid rgb(247 242 232 / 27%); border-radius: 12px; background: linear-gradient(145deg, rgb(247 242 232 / 10%), rgb(156 120 255 / 7%)); color: #f7f2e8; cursor: pointer; transition: .18s ease; }
 .courier-card strong { color: #fff1c7; font-family: Georgia, "Hiragino Mincho ProN", serif; font-size: .98rem; line-height: 1.25; }
 .courier-card small { color: #f7d98a; font-size: .67rem; font-weight: 900; letter-spacing: .07em; text-transform: uppercase; }
 .courier-card em { color: #d4cddd; font-size: .72rem; font-style: normal; line-height: 1.3; }
 .courier-card i { margin-top: auto; color: #c9c0de; font-size: .65rem; font-style: normal; line-height: 1.35; }
-.courier-choice input:checked + .courier-card { border-color: #f4b942; background: linear-gradient(145deg, rgb(244 185 66 / 28%), rgb(156 120 255 / 22%)); box-shadow: inset 0 0 0 1px rgb(255 255 255 / 19%), 0 5px 15px rgb(244 185 66 / 16%); }
-.courier-choice input:focus-visible + .courier-card { outline: 3px solid #f4b942; outline-offset: 3px; }
 .name-field em { color: #bebac7; font-weight: 600; font-style: normal; text-transform: none; letter-spacing: 0; }
 .choice-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
 .choice { position: relative; min-width: 0; }
