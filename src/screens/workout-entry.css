@@ -1,0 +1,271 @@
+.workout-entry-screen {
+  display: flex;
+  width: min(100%, 375px);
+  min-height: 100dvh;
+  margin: 0 auto;
+  padding: calc(16px + env(safe-area-inset-top)) 16px calc(86px + env(safe-area-inset-bottom));
+  flex-direction: column;
+  gap: 11px;
+  background: #0c1022;
+  color: #f7f2e8;
+}
+
+.workout-entry-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.workout-entry-crest {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  flex: none;
+  place-items: center;
+  border: 1px solid rgb(244 185 66 / 55%);
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 35%, #6b4bb0, #2b1a52);
+  color: #f7d98a;
+  font-family: Georgia, "Hiragino Mincho ProN", serif;
+  font-size: .9rem;
+}
+
+.workout-entry-heading {
+  min-width: 0;
+}
+
+.workout-entry-heading h1 {
+  margin: 0;
+  color: #fff1c7;
+  font-family: Georgia, "Hiragino Mincho ProN", serif;
+  font-size: .8rem;
+  line-height: 1.35;
+}
+
+.workout-entry-heading p {
+  margin: 0;
+  color: #b9b2c9;
+  font-size: .6rem;
+  letter-spacing: .04em;
+}
+
+.workout-entry-destination {
+  display: flex;
+  gap: 9px;
+  align-items: center;
+  padding: 9px 11px;
+  border: 1px solid rgb(244 185 66 / 40%);
+  border-radius: 10px;
+  background: rgb(244 185 66 / 9%);
+}
+
+.workout-entry-duty-tag {
+  display: grid;
+  width: 30px;
+  height: 38px;
+  flex: none;
+  place-items: center;
+  border-radius: 3px;
+  background: linear-gradient(#eadcbc, #c8b68c);
+  box-shadow: 0 1px 5px rgb(0 0 0 / 40%);
+  color: #3a2a10;
+  font-family: Georgia, "Hiragino Mincho ProN", serif;
+  font-size: .6rem;
+  font-weight: 900;
+  letter-spacing: .08em;
+  writing-mode: vertical-rl;
+}
+
+.workout-entry-destination div {
+  min-width: 0;
+}
+
+.workout-entry-destination strong,
+.workout-entry-destination span {
+  display: block;
+}
+
+.workout-entry-destination strong {
+  overflow: hidden;
+  color: #fff1c7;
+  font-family: Georgia, "Hiragino Mincho ProN", serif;
+  font-size: .78rem;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workout-entry-destination span {
+  margin-top: 1px;
+  overflow: hidden;
+  color: #d4cddd;
+  font-size: .62rem;
+  line-height: 1.4;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workout-entry-form {
+  display: grid;
+  gap: 11px;
+}
+
+.workout-entry-fieldset {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.workout-entry-fieldset legend,
+.workout-entry-name-field > span {
+  display: block;
+  margin: 4px 0 7px;
+  color: #e8e4dc;
+  font-size: .7rem;
+  font-weight: 800;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+.workout-entry-choice-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.workout-entry-two-columns {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.workout-entry-choice {
+  position: relative;
+  min-width: 0;
+}
+
+.workout-entry-choice input {
+  position: absolute;
+  opacity: 0;
+}
+
+.workout-entry-choice span {
+  display: grid;
+  min-height: 48px;
+  place-items: center;
+  border: 1px solid rgb(247 242 232 / 30%);
+  border-radius: 10px;
+  background: rgb(247 242 232 / 7%);
+  color: #f7f2e8;
+  font-size: .83rem;
+  font-weight: 800;
+  text-align: center;
+  transition: background .18s ease, border-color .18s ease, color .18s ease;
+}
+
+.workout-entry-choice small {
+  margin-left: 2px;
+  color: #d4cddd;
+  font-size: .62rem;
+  font-weight: 700;
+}
+
+.workout-entry-choice input:checked + span {
+  border-color: #f4b942;
+  background: #f4b942;
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 32%);
+  color: #21180e;
+}
+
+.workout-entry-choice input:checked + span small {
+  color: #58421c;
+}
+
+.workout-entry-choice input:focus-visible + span,
+.workout-entry-name-field input:focus-visible,
+.workout-entry-submit:focus-visible,
+.workout-entry-back:focus-visible {
+  outline: 3px solid #f7d98a;
+  outline-offset: 3px;
+}
+
+.workout-entry-helper {
+  margin: 6px 1px 0;
+  color: #d4cddd;
+  font-size: .68rem;
+  line-height: 1.45;
+}
+
+.workout-entry-privacy-note {
+  color: #f7d98a;
+}
+
+.workout-entry-name-field {
+  display: block;
+}
+
+.workout-entry-name-field > span {
+  margin-top: 0;
+}
+
+.workout-entry-name-field em {
+  color: #bebac7;
+  font-style: normal;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.workout-entry-name-field input {
+  width: 100%;
+  min-height: 46px;
+  padding: 0 13px;
+  border: 1px solid rgb(247 242 232 / 30%);
+  border-radius: 10px;
+  background: rgb(247 242 232 / 8%);
+  color: #f7f2e8;
+}
+
+.workout-entry-name-field input::placeholder {
+  color: #b9b5c2;
+}
+
+.workout-entry-actions {
+  margin-top: auto;
+}
+
+.workout-entry-submit,
+.workout-entry-back {
+  display: block;
+  width: 100%;
+  border-radius: 10px;
+  font-weight: 800;
+}
+
+.workout-entry-submit {
+  min-height: 52px;
+  border: 1px solid #ffd878;
+  background: #f4b942;
+  box-shadow: 0 3px 12px rgb(244 185 66 / 32%);
+  color: #21180e;
+  font-size: .95rem;
+}
+
+.workout-entry-submit:disabled {
+  cursor: wait;
+  opacity: .62;
+}
+
+.workout-entry-back {
+  min-height: 44px;
+  margin-top: 8px;
+  border: 1px solid rgb(247 242 232 / 28%);
+  background: transparent;
+  color: #f7f2e8;
+  font-size: .82rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .workout-entry-choice span {
+    transition-duration: .01ms;
+  }
+}

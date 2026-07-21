@@ -1,0 +1,143 @@
+.goyo-detail {
+  min-height: 100%;
+  padding: 12px 14px calc(92px + env(safe-area-inset-bottom));
+  background: radial-gradient(120% 48% at 50% 0%, #31205a 0%, #18102e 48%, #0c0a19 100%);
+  color: #f7f2e8;
+  font-family: "Avenir Next", "Hiragino Kaku Gothic ProN", "Hiragino Sans", sans-serif;
+}
+
+.goyo-detail__header {
+  display: grid;
+  grid-template-columns: 42px 1fr 42px;
+  min-height: 44px;
+  align-items: center;
+  margin-bottom: 9px;
+}
+
+.goyo-detail__header h1 {
+  margin: 0;
+  color: #fff1c7;
+  font-family: Georgia, "Hiragino Mincho ProN", serif;
+  font-size: 1.08rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+.goyo-detail__icon-button {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  place-items: center;
+  border: 1px solid rgb(247 242 232 / 28%);
+  border-radius: 9px;
+  background: rgb(247 242 232 / 6%);
+  color: #f7d98a;
+  font-family: Georgia, serif;
+  font-size: 1.4rem;
+  line-height: 1;
+}
+
+.goyo-detail__help-button { justify-self: end; font-size: 1rem; }
+
+.goyo-detail__help {
+  margin: -1px 0 10px;
+  padding: 7px 9px;
+  border: 1px solid rgb(244 185 66 / 36%);
+  border-radius: 7px;
+  background: rgb(244 185 66 / 10%);
+  color: #efe1bb;
+  font-size: .67rem;
+  line-height: 1.45;
+}
+
+.goyo-detail__contract,
+.goyo-detail__section {
+  margin-bottom: 10px;
+  border: 1px solid rgb(244 185 66 / 46%);
+  border-radius: 10px;
+  background: linear-gradient(160deg, rgb(156 120 255 / 16%), rgb(12 16 34 / 50%));
+  box-shadow: 0 7px 22px rgb(0 0 0 / 16%);
+}
+
+.goyo-detail__contract { padding: 12px; }
+
+.goyo-detail__contract-heading { display: flex; gap: 10px; align-items: flex-start; }
+
+.goyo-detail__fuda {
+  display: grid;
+  width: 40px;
+  height: 54px;
+  flex: none;
+  place-items: center;
+  border-radius: 3px;
+  background: linear-gradient(#eadcbc, #c8b68c);
+  box-shadow: 0 2px 5px rgb(0 0 0 / 34%);
+  color: #3a2a10;
+  font-family: Georgia, "Hiragino Mincho ProN", serif;
+  font-size: .7rem;
+  font-weight: 900;
+  letter-spacing: .08em;
+  writing-mode: vertical-rl;
+}
+
+.goyo-detail__contract-heading > div { min-width: 0; }
+.goyo-detail__contract-heading p { margin: 0 0 1px; color: #c9c0de; font-size: .58rem; font-weight: 800; letter-spacing: .08em; }
+.goyo-detail__contract h2 { margin: 0; color: #fff1c7; font-family: Georgia, "Hiragino Mincho ProN", serif; font-size: .93rem; line-height: 1.35; }
+.goyo-detail__contract-heading > div > span { display: block; margin-top: 3px; color: #d4cddd; font-size: .66rem; line-height: 1.42; }
+
+.goyo-detail__facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin: 12px 0 0; }
+.goyo-detail__facts > div { padding: 7px 8px; border: 1px solid rgb(247 242 232 / 15%); border-radius: 7px; background: rgb(247 242 232 / 5%); }
+.goyo-detail__facts dt { color: #b9b2c9; font-size: .57rem; font-weight: 800; letter-spacing: .06em; }
+.goyo-detail__facts dd { margin: 2px 0 0; color: #f7d98a; font-family: Georgia, "Hiragino Mincho ProN", serif; font-size: .79rem; font-variant-numeric: tabular-nums; }
+
+.goyo-detail__section { padding: 10px 11px; border-color: rgb(247 242 232 / 20%); }
+.goyo-detail__section h2 { margin: 0 0 8px; color: #e6cf95; font-size: .67rem; font-weight: 800; letter-spacing: .07em; }
+.goyo-detail__unavailable { margin: 0; color: #b9b2c9; font-size: .75rem; }
+
+.goyo-detail__rail { position: relative; display: grid; grid-template-columns: repeat(var(--goyo-checkpoints, 2), minmax(0, 1fr)); margin: 0; padding: 0; list-style: none; }
+.goyo-detail__rail::before { position: absolute; z-index: 0; top: 7px; right: 7%; left: 7%; height: 1px; background: rgb(247 242 232 / 26%); content: ""; }
+.goyo-detail__stop { position: relative; z-index: 1; display: grid; min-width: 0; justify-items: center; gap: 4px; color: #b9b2c9; font-size: .56rem; line-height: 1.25; text-align: center; }
+.goyo-detail__node { display: grid; width: 15px; height: 15px; place-items: center; border: 1px solid #86759f; border-radius: 50%; background: #21183c; color: #b9b2c9; font-size: .55rem; }
+.goyo-detail__stop--next { color: #fff1c7; font-weight: 800; }
+.goyo-detail__stop--next .goyo-detail__node { width: 22px; height: 22px; margin-top: -4px; border-color: #f4b942; background: #5d408e; box-shadow: 0 0 0 3px rgb(244 185 66 / 14%); color: #fff1c7; font-size: .75rem; }
+.goyo-detail__remaining { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 2px 8px; margin: 11px 0 0; padding-top: 8px; border-top: 1px dashed rgb(247 242 232 / 19%); color: #b9b2c9; font-size: .58rem; }
+.goyo-detail__remaining strong { overflow: hidden; color: #f7d98a; font-size: .62rem; font-variant-numeric: tabular-nums; text-align: right; text-overflow: ellipsis; white-space: nowrap; }
+
+.goyo-detail__effects,
+.goyo-detail__goals { margin: 0; padding: 0; list-style: none; }
+.goyo-detail__effects li { display: grid; grid-template-columns: 25px minmax(0, 1fr) auto; gap: 7px; align-items: center; padding: 7px 0; border-bottom: 1px solid rgb(247 242 232 / 9%); color: #e8e4dc; font-size: .68rem; }
+.goyo-detail__effects li:last-child { border-bottom: 0; }
+.goyo-detail__effect-icon { display: grid; width: 23px; height: 23px; place-items: center; border-radius: 6px; background: rgb(247 242 232 / 7%); font-size: .8rem; }
+.goyo-detail__effects strong { color: #8fe0b6; font-size: .67rem; font-variant-numeric: tabular-nums; }
+
+.goyo-detail__goals { display: grid; gap: 7px; }
+.goyo-detail__goals li { display: grid; grid-template-columns: 17px minmax(0, 1fr) auto; gap: 3px 7px; align-items: center; }
+.goyo-detail__goal-icon { font-size: .72rem; text-align: center; }
+.goyo-detail__goal-label { overflow: hidden; color: #d4cddd; font-size: .64rem; text-overflow: ellipsis; white-space: nowrap; }
+.goyo-detail__goal-value { color: #b9b2c9; font-size: .58rem; font-variant-numeric: tabular-nums; }
+.goyo-detail__bar { grid-column: 1 / -1; display: block; height: 4px; overflow: hidden; border-radius: 999px; background: rgb(247 242 232 / 12%); }
+.goyo-detail__bar > span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #8fe0b6, #f4b942); }
+.goyo-detail__goal-missing { grid-column: 1 / -1; color: #b9b2c9; font-size: .65rem; }
+
+.goyo-detail__mikoto { display: flex; gap: 8px; align-items: flex-start; margin: 2px 2px 11px; padding: 8px 9px; border: 1px solid rgb(244 185 66 / 34%); border-radius: 9px; background: rgb(12 16 34 / 76%); }
+.goyo-detail__mikoto-seal { display: grid; width: 27px; height: 27px; flex: none; place-items: center; border-radius: 50%; background: radial-gradient(circle at 50% 35%, #c3aaff, #4b2f86); color: #fff1c7; font-family: Georgia, serif; font-size: .72rem; }
+.goyo-detail__mikoto p { margin: 0; color: #e8e4dc; font-size: .63rem; line-height: 1.45; }
+.goyo-detail__mikoto strong { display: block; margin-bottom: 1px; color: #f7d98a; font-size: .58rem; letter-spacing: .04em; }
+
+.goyo-detail__actions { display: grid; gap: 8px; margin-top: 4px; }
+.goyo-detail__accept-button,
+.goyo-detail__ghost-button { width: 100%; min-height: 44px; border-radius: 9px; font-size: .82rem; font-weight: 800; }
+.goyo-detail__accept-button { border: 1px solid #a784ef; background: linear-gradient(#8d6df0, #6f4fd6); box-shadow: 0 4px 13px rgb(124 92 255 / 32%); color: #fff; }
+.goyo-detail__ghost-button { border: 1px solid rgb(247 242 232 / 29%); background: transparent; color: #f7f2e8; }
+
+.goyo-detail__empty { display: grid; min-height: 320px; padding: 24px 18px; place-content: center; justify-items: center; border: 1px solid rgb(244 185 66 / 36%); border-radius: 11px; background: linear-gradient(160deg, rgb(156 120 255 / 12%), rgb(12 16 34 / 48%)); text-align: center; }
+.goyo-detail__empty > span { margin-bottom: 10px; color: #f7d98a; font-family: Georgia, serif; font-size: 2rem; }
+.goyo-detail__empty h2 { margin: 0; color: #fff1c7; font-family: Georgia, "Hiragino Mincho ProN", serif; font-size: 1rem; }
+.goyo-detail__empty p { margin: 7px 0 18px; color: #c9c0de; font-size: .69rem; line-height: 1.5; }
+
+.goyo-detail :focus-visible { outline: 3px solid #f6e3ac; outline-offset: 3px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .goyo-detail *, .goyo-detail *::before, .goyo-detail *::after { transition-duration: .01ms !important; animation-duration: .01ms !important; }
+}
