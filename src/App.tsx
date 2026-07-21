@@ -19,6 +19,7 @@ import { NutritionFlow } from './nutrition/NutritionFlow'
 import { TownHomeScreen, type TownHomeGoal, type TownHomeParameter } from './screens/TownHomeScreen'
 import { WorkoutEntryScreen } from './screens/WorkoutEntryScreen'
 import { GoyoDetailScreen, type GoyoCheckpoint, type GoyoDuty, type GoyoGoal, type GoyoTownEffect } from './screens/GoyoDetailScreen'
+import { RecordBookScreen, type RecordBookRun } from './screens/RecordBookScreen'
 import type { NutritionReport } from '../shared/nutrition'
 import { localizeContent, t, type Locale } from './i18n'
 
@@ -612,6 +613,8 @@ export default function App() {
   const [stats, setStats] = useState<JourneyStats>({ elapsedSeconds: 0, progress: 0, distanceMetres: 0 })
   const [completion, setCompletion] = useState<MissionCompletion | null>(null)
   const [latestNutritionReport, setLatestNutritionReport] = useState<NutritionReport | null>(null)
+  const [sessionRuns, setSessionRuns] = useState<RecordBookRun[]>([])
+  const [sessionMeals, setSessionMeals] = useState<NutritionReport[]>([])
   const [missionCompletedThisSession, setMissionCompletedThisSession] = useState(false)
   const [targetDistanceMetres, setTargetDistanceMetres] = useState<number | null>(null)
   const [availableMinutes, setAvailableMinutes] = useState<AvailableMinutes>(10)
@@ -691,6 +694,12 @@ export default function App() {
       .then((result) => {
         if (cancelled) return
         setCompletion(result)
+        setSessionRuns((runs) => [...runs, {
+          title: mission.title,
+          distanceMetres: stats.distanceMetres,
+          durationSeconds: stats.elapsedSeconds,
+          rank: result.rank,
+        }])
         setMissionCompletedThisSession(true)
         setState('completed')
       })
@@ -699,7 +708,7 @@ export default function App() {
         setState('idle')
       })
     return () => { cancelled = true }
-  }, [state, mission, stats.elapsedSeconds, targetDistanceMetres])
+  }, [state, mission, stats.distanceMetres, stats.elapsedSeconds, targetDistanceMetres])
 
   const activeMission = useMemo(() => mission, [mission])
 
@@ -729,6 +738,10 @@ export default function App() {
   }
 
   const missionInProgress = state === 'ready' || state === 'active' || state === 'paused' || state === 'completing'
+  const recordMeal = (report: NutritionReport) => {
+    setLatestNutritionReport(report)
+    setSessionMeals((meals) => [...meals, report])
+  }
   const townActivityScores = useMemo(() => {
     const run = runScore({
       distanceMetres: stats.distanceMetres,
@@ -810,7 +823,7 @@ export default function App() {
   if (journeyPresentation === 'preparing') {
     content = <MissionPreparingScreen />
   } else if (journeyPresentation === 'nutrition-before-journey') {
-    content = <NutritionFlow onBack={() => setState('idle')} backLabel="Dispatch" onContinue={() => setState('ready')} locale={locale} distanceMetres={undefined} elapsedSeconds={undefined} previousFoodScore={latestNutritionReport?.foodScore ?? 0} onReport={setLatestNutritionReport} />
+    content = <NutritionFlow onBack={() => setState('idle')} backLabel="Dispatch" onContinue={() => setState('ready')} locale={locale} distanceMetres={undefined} elapsedSeconds={undefined} previousFoodScore={latestNutritionReport?.foodScore ?? 0} onReport={recordMeal} />
   } else if (journeyPresentation === 'journey' && isJourneyScreenState(state) && activeMission) {
     content = <JourneyScreen mission={activeMission} locale={locale} state={state} stats={stats} targetDistanceMetres={targetDistanceMetres ?? 0} availableMinutes={availableMinutes} movementMode={movementMode} locationStatus={locationStatus} onPause={() => setState((current) => current === 'paused' ? 'active' : 'paused')} onEnd={() => {
       distanceMetresRef.current = targetDistanceMetres ?? 0
@@ -823,7 +836,7 @@ export default function App() {
       setState('idle')
     }} onReturnToTown={returnToTown} onNutrition={() => setState('nutrition')} />
   } else if (journeyPresentation === 'nutrition') {
-    content = <NutritionFlow onBack={() => setState('completed')} onReturnToTown={returnToTown} locale={locale} distanceMetres={stats.distanceMetres} elapsedSeconds={stats.elapsedSeconds} previousFoodScore={latestNutritionReport?.foodScore ?? 0} onReport={setLatestNutritionReport} />
+    content = <NutritionFlow onBack={() => setState('completed')} onReturnToTown={returnToTown} locale={locale} distanceMetres={stats.distanceMetres} elapsedSeconds={stats.elapsedSeconds} previousFoodScore={latestNutritionReport?.foodScore ?? 0} onReport={recordMeal} />
   } else if (journeyPresentation) {
     // A transition cannot fall back to a tab if its mission payload is still arriving.
     content = <MissionPreparingScreen />
@@ -831,7 +844,9 @@ export default function App() {
     content = <TownHomeScreen duty={townDuty} goals={goals} townParams={townParams} totalScore={currentTotalScore} mikotoQuote={mikotoQuote} locale={locale} onOpenGoyo={() => setSelectedTab('dispatch')} />
   } else if (selectedTab === 'workout') {
     content = <WorkoutEntryScreen duty={workoutDuty} onSubmit={generateMission} onBack={() => setSelectedTab('dispatch')} generating={false} locale={locale} />
-  } else if (selectedTab === 'flags' || selectedTab === 'records') {
+  } else if (selectedTab === 'records') {
+    content = <RecordBookScreen runs={sessionRuns} meals={sessionMeals} locale={locale} onOpenGoyo={() => setSelectedTab('dispatch')} />
+  } else if (selectedTab === 'flags') {
     content = <ComingSoonScreen tab={selectedTab} locale={locale} onReturnToDispatch={() => setSelectedTab('dispatch')} />
   } else {
     content = <GoyoTabContent duty={goyoDuty} checkpoints={goyoCheckpoints} goals={goyoGoals} townEffects={goyoTownEffects} mikotoQuote={goyoDuty ? mikotoQuote : null} locale={locale} onAccept={() => setState(journeyStateAfterGoyoAccept())} onBack={() => setSelectedTab('town')} onGenerate={generateMission} generating={false} />
