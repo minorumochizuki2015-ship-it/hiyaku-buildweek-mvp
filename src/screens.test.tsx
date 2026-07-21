@@ -1,6 +1,8 @@
+import { Children, isValidElement, type ReactElement, type ReactNode } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it, vi } from 'vitest'
-import { AppShell, ArrivalScreen, DispatchScreen, GoyoTabContent, JourneyScreen, LanguageToggle, JOURNEY_PRESENTATION_STATES, isJourneyScreenState, journeyPresentationFor, journeyStateAfterGoyoAccept, nutritionStateFor, shouldDismissGoyoHelp, type JourneyState } from './App'
+import { AppShell, ArrivalActions, ArrivalScreen, DispatchScreen, GoyoTabContent, JourneyScreen, LanguageToggle, JOURNEY_PRESENTATION_STATES, isJourneyScreenState, journeyPresentationFor, journeyStateAfterGoyoAccept, nutritionStateFor, shouldDismissGoyoHelp, townReturnDestination, type JourneyState } from './App'
+import { runScore, totalScore } from '../shared/activity'
 import { NutritionFlow } from './nutrition/NutritionFlow'
 import { checkpointRouteState } from './checkpointRoute'
 import { distanceTargetMetres, haversineDistanceMetres, rivalDistanceAtElapsedSeconds, rivalPaceMultiplier, startWalkTracking } from './movement'
@@ -14,6 +16,15 @@ import { WorkoutEntryScreen } from './screens/WorkoutEntryScreen'
 import { GoyoDetailScreen } from './screens/GoyoDetailScreen'
 
 const mission = mockGenerateMission({ availableMinutes: 10, energy: 'Steady', courierId: MIKOTO.id, displayName: 'Ada' }, 'en')
+
+function findButtonByText(node: ReactNode, label: string): ReactElement<{ onClick?: () => void }> | undefined {
+  if (!isValidElement(node)) return undefined
+  const element = node as ReactElement<{ children?: ReactNode; onClick?: () => void }>
+  if (element.type === 'button' && element.props.children === label) return element
+  return Children.toArray(element.props.children)
+    .map((child) => findButtonByText(child, label))
+    .find((button): button is ReactElement<{ onClick?: () => void }> => button !== undefined)
+}
 
 describe('HIKYAKU static screens', () => {
   it('renders the implemented Town, Workout, and Goyo tab screens rather than the coming-soon screen', () => {
@@ -97,7 +108,9 @@ describe('HIKYAKU static screens', () => {
 
   it('renders Arrival and its primary action', () => {
     const completion = mockCompleteMission({ distanceMeters: 480, durationSeconds: 100, completionPercent: 100, missionTitle: mission.title, courierId: mission.courierId }, 'en')
-    const screen = renderToStaticMarkup(<ArrivalScreen mission={mission} completion={completion} locale="en" stats={{ elapsedSeconds: 100, progress: 100, distanceMetres: 480 }} targetDistanceMetres={480} availableMinutes={10} onRestart={() => undefined} />)
+    const screen = renderToStaticMarkup(<ArrivalScreen mission={mission} completion={completion} locale="en" stats={{ elapsedSeconds: 100, progress: 100, distanceMetres: 480 }} targetDistanceMetres={480} availableMinutes={10} onRestart={() => undefined} onReturnToTown={() => undefined} />)
+    expect(screen).toContain('Return to town')
+    expect(screen.indexOf('Return to town')).toBeLessThan(screen.indexOf('Start Another Mission'))
     expect(screen).toContain('Start Another Mission')
     expect(screen).toContain(completion.rank)
     expect(screen).toContain('/assets/arrival-honjin-goze.mp4')
@@ -113,7 +126,7 @@ describe('HIKYAKU static screens', () => {
 
   it('keeps the existing Arrival-to-Nutrition route available', () => {
     const completion = mockCompleteMission({ distanceMeters: 480, durationSeconds: 100, completionPercent: 100, missionTitle: mission.title, courierId: mission.courierId }, 'en')
-    const screen = renderToStaticMarkup(<ArrivalScreen mission={mission} completion={completion} locale="en" stats={{ elapsedSeconds: 100, progress: 100, distanceMetres: 480 }} targetDistanceMetres={480} availableMinutes={10} onRestart={() => undefined} onNutrition={() => undefined} />)
+    const screen = renderToStaticMarkup(<ArrivalScreen mission={mission} completion={completion} locale="en" stats={{ elapsedSeconds: 100, progress: 100, distanceMetres: 480 }} targetDistanceMetres={480} availableMinutes={10} onRestart={() => undefined} onReturnToTown={() => undefined} onNutrition={() => undefined} />)
 
     expect(nutritionStateFor('arrival')).toBe('nutrition')
     expect(screen).toContain('食の帳簿')
@@ -184,19 +197,24 @@ describe('NAVSHELL1', () => {
 })
 
 describe('core journey render precedence', () => {
-  it('drives the issued duty through journey, arrival, and nutrition rendered screens', () => {
+  it('renders idle → accept → journey → end → arrival → Return to town with the run-earned street rank', () => {
     let state: JourneyState = 'idle'
     let selectedTab = 'dispatch'
     let issuedMission: typeof mission | null = null
     let completion: ReturnType<typeof mockCompleteMission> | null = null
     const stats = { elapsedSeconds: 100, progress: 100, distanceMetres: 800 }
+    const targetDistanceMetres = 800
 
     const acceptDispatch = () => {
       issuedMission = mission
       state = 'idle'
     }
     const acceptGoyo = () => { state = journeyStateAfterGoyoAccept() }
-    const returnToTown = () => { selectedTab = 'town' }
+    const returnToTown = () => {
+      const destination = townReturnDestination()
+      state = destination.state
+      selectedTab = destination.selectedTab
+    }
     const endMission = () => { state = 'completing' }
     const receiveCompletion = () => {
       completion = mockCompleteMission({ distanceMeters: 800, durationSeconds: 100, completionPercent: 100, missionTitle: mission.title, courierId: mission.courierId }, 'en')
@@ -207,13 +225,30 @@ describe('core journey render precedence', () => {
     const renderCurrentScreen = (): string => {
       const presentation = journeyPresentationFor(state)
       if (presentation === 'journey' && isJourneyScreenState(state) && issuedMission) {
-        return renderToStaticMarkup(<JourneyScreen mission={issuedMission} locale="en" state={state} stats={stats} targetDistanceMetres={800} availableMinutes={10} movementMode="demo" locationStatus="" onPause={() => undefined} onEnd={endMission} />)
+        return renderToStaticMarkup(<JourneyScreen mission={issuedMission} locale="en" state={state} stats={stats} targetDistanceMetres={targetDistanceMetres} availableMinutes={10} movementMode="demo" locationStatus="" onPause={() => undefined} onEnd={endMission} />)
       }
       if (presentation === 'arrival' && issuedMission && completion) {
-        return renderToStaticMarkup(<ArrivalScreen mission={issuedMission} completion={completion} locale="en" stats={stats} targetDistanceMetres={800} availableMinutes={10} onRestart={() => undefined} onNutrition={openNutrition} />)
+        return renderToStaticMarkup(<ArrivalScreen mission={issuedMission} completion={completion} locale="en" stats={stats} targetDistanceMetres={targetDistanceMetres} availableMinutes={10} onRestart={() => undefined} onReturnToTown={returnToTown} onNutrition={openNutrition} />)
       }
       if (presentation === 'nutrition') {
         return renderToStaticMarkup(<NutritionFlow onBack={() => undefined} locale="en" distanceMetres={stats.distanceMetres} elapsedSeconds={stats.elapsedSeconds} />)
+      }
+      if (selectedTab === 'town') {
+        const run = runScore({ distanceMetres: stats.distanceMetres, targetDistanceMetres })
+        return renderToStaticMarkup(
+          <TownHomeScreen
+            duty={null}
+            goals={[]}
+            townParams={[
+              { key: 'food-hall', label: { en: 'Food hall', ja: '食堂' }, value: 0 },
+              { key: 'courier-flag', label: { en: 'Courier flag power', ja: '飛脚旗の力' }, value: run },
+            ]}
+            totalScore={totalScore(0, 0, run)}
+            mikotoQuote={{ en: MIKOTO.normalQuote, ja: MIKOTO.normalQuote }}
+            locale="en"
+            onOpenGoyo={() => { selectedTab = 'dispatch' }}
+          />,
+        )
       }
       return renderToStaticMarkup(
         <GoyoTabContent
@@ -236,14 +271,10 @@ describe('core journey render precedence', () => {
 
     acceptDispatch()
     expect(renderCurrentScreen()).toContain('Today Goyo')
-    returnToTown()
-    expect(selectedTab).toBe('town')
     expect(issuedMission).toBe(mission)
     expect(state).toBe('idle')
 
-    selectedTab = 'dispatch'
     acceptGoyo()
-    selectedTab = 'town'
     expect(journeyPresentationFor(state)).toBe('journey')
     expect(renderCurrentScreen()).toContain('Mission ready')
 
@@ -252,12 +283,21 @@ describe('core journey render precedence', () => {
     endMission()
     expect(journeyPresentationFor(state)).toBe('journey')
     receiveCompletion()
-    expect(renderCurrentScreen()).toContain('ARRIVAL RECORDED')
+    const arrival = renderCurrentScreen()
+    expect(arrival).toContain('ARRIVAL RECORDED')
+    expect(arrival).toContain('Return to town')
 
-    openNutrition()
-    expect(journeyPresentationFor(state)).toBe('nutrition')
-    expect(renderCurrentScreen()).toContain('Nutrition Report')
+    const returnButton = findButtonByText(
+      ArrivalActions({ onRestart: () => undefined, onReturnToTown: returnToTown, onShare: () => undefined }),
+      'Return to town',
+    )
+    expect(returnButton).toBeDefined()
+    returnButton?.props.onClick?.()
+    expect(state).toBe('idle')
     expect(selectedTab).toBe('town')
+    const grownTown = renderCurrentScreen()
+    expect(grownTown).toContain('class="town-home"')
+    expect(grownTown).toContain('src="/assets/town/rojolive-4.png"')
   })
 })
 

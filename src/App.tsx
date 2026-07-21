@@ -83,6 +83,11 @@ export function journeyStateAfterGoyoAccept(): Extract<JourneyState, 'ready'> {
   return 'ready'
 }
 
+/** Arrival and nutrition both leave their journey presentation through Town. */
+export function townReturnDestination(): { state: Extract<JourneyState, 'idle'>; selectedTab: Extract<NavTab, 'town'> } {
+  return { state: 'idle', selectedTab: 'town' }
+}
+
 export function LanguageToggle({ locale, onToggle }: { locale: Locale; onToggle: () => void }) {
   return (
     <button
@@ -480,7 +485,21 @@ export function JourneyScreen({ mission, locale, state, stats, targetDistanceMet
   )
 }
 
-export function ArrivalScreen({ mission, completion, locale, stats, targetDistanceMetres, availableMinutes, onRestart, onNutrition }: {
+export function ArrivalActions({ onRestart, onReturnToTown, onShare }: { onRestart: () => void; onReturnToTown: () => void; onShare: () => void }) {
+  return (
+    <>
+      <div className="arrival-actions">
+        <button className="primary-button" type="button" onClick={onReturnToTown}>Return to town</button>
+      </div>
+      <div className="arrival-actions">
+        <button className="secondary-button" type="button" onClick={onShare}>Share Seal</button>
+        <button className="secondary-button compact" type="button" onClick={onRestart}>Start Another Mission</button>
+      </div>
+    </>
+  )
+}
+
+export function ArrivalScreen({ mission, completion, locale, stats, targetDistanceMetres, availableMinutes, onRestart, onReturnToTown, onNutrition }: {
   mission: Mission
   completion: MissionCompletion
   locale: Locale
@@ -488,6 +507,7 @@ export function ArrivalScreen({ mission, completion, locale, stats, targetDistan
   targetDistanceMetres: number
   availableMinutes: AvailableMinutes
   onRestart: () => void
+  onReturnToTown: () => void
   onNutrition?: () => void
 }) {
   const distance = Math.round(stats.distanceMetres)
@@ -566,10 +586,7 @@ export function ArrivalScreen({ mission, completion, locale, stats, targetDistan
         <span aria-hidden="true">✦</span> 今日の一食 <small>Watch the courier's reward</small>
       </button>
       {onNutrition && <button className="nutrition-link" type="button" onClick={onNutrition}>食の帳簿 <small>View nutrition report</small></button>}
-      <div className="arrival-actions">
-        <button className="secondary-button" type="button" onClick={share}>Share Seal</button>
-        <button className="primary-button compact" type="button" onClick={onRestart}>Start Another Mission</button>
-      </div>
+      <ArrivalActions onRestart={onRestart} onReturnToTown={onReturnToTown} onShare={() => void share()} />
       <p className="share-status" aria-live="polite">{shareStatus}</p>
       {mealOpen && (
         <div className="meal-modal-backdrop" role="presentation" onClick={() => setMealOpen(false)}>
@@ -686,6 +703,12 @@ export default function App() {
 
   const activeMission = useMemo(() => mission, [mission])
 
+  const returnToTown = () => {
+    const destination = townReturnDestination()
+    setState(destination.state)
+    setSelectedTab(destination.selectedTab)
+  }
+
   const generateMission = async (input: MissionInput, selectedMovementMode: MovementMode) => {
     setState('generating')
     try {
@@ -789,9 +812,9 @@ export default function App() {
     content = <ArrivalScreen mission={activeMission} completion={completion} locale={locale} stats={stats} targetDistanceMetres={targetDistanceMetres ?? 0} availableMinutes={availableMinutes} onRestart={() => {
       setSelectedTab('dispatch')
       setState('idle')
-    }} onNutrition={() => setState('nutrition')} />
+    }} onReturnToTown={returnToTown} onNutrition={() => setState('nutrition')} />
   } else if (journeyPresentation === 'nutrition') {
-    content = <NutritionFlow onBack={() => setState('completed')} locale={locale} distanceMetres={stats.distanceMetres} elapsedSeconds={stats.elapsedSeconds} previousFoodScore={latestNutritionReport?.foodScore ?? 0} onReport={setLatestNutritionReport} />
+    content = <NutritionFlow onBack={() => setState('completed')} onReturnToTown={returnToTown} locale={locale} distanceMetres={stats.distanceMetres} elapsedSeconds={stats.elapsedSeconds} previousFoodScore={latestNutritionReport?.foodScore ?? 0} onReport={setLatestNutritionReport} />
   } else if (journeyPresentation) {
     // A transition cannot fall back to a tab if its mission payload is still arriving.
     content = <MissionPreparingScreen />

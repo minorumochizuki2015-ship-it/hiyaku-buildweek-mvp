@@ -116,6 +116,7 @@ const JA_TEXT: Record<string, string> = {
   "Watch the courier's reward": '飛脚のご褒美を見る',
   'View nutrition report': '栄養レポートを見る',
   'Share Seal': '印を共有',
+  'Return to town': '町へ戻る',
   'Start Another Mission': '次の任務を始める',
   'Seal shared as an image.': '印を画像として共有しました。',
   'Seal summary shared.': '印の概要を共有しました。',

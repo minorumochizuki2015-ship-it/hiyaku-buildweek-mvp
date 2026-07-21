@@ -17,6 +17,7 @@ type FlowStep = 1 | 2 | 3 | 4
 
 interface NutritionFlowProps {
   onBack: () => void
+  onReturnToTown?: () => void
   backLabel?: string
   onContinue?: () => void
   locale: Locale
@@ -90,6 +91,7 @@ export function foodHallDeltasForReport(report: NutritionReport, previousFoodSco
 
 export function NutritionFlow({
   onBack,
+  onReturnToTown,
   backLabel = 'Arrival',
   onContinue,
   locale,
@@ -167,7 +169,7 @@ export function NutritionFlow({
     <GozenLedgerScreen key="ledger" report={report} distanceMetres={distanceMetres} elapsedSeconds={elapsedSeconds} locale={locale} />,
     <NutrientCompareScreen key="compare" report={report} standard={flow.standard} onStandardChange={(standard) => dispatch({ type: 'setStandard', standard })} locale={locale} />,
     <TownDeliveryScreen key="town" report={report} locale={locale} />,
-    <TomorrowSuggestScreen key="tomorrow" report={report} locale={locale} onRecordMeal={recordAnotherMeal} onViewGoyo={() => onContinue?.()} onBackToTown={onBack} />,
+    <TomorrowSuggestScreen key="tomorrow" report={report} locale={locale} onRecordMeal={recordAnotherMeal} onViewGoyo={() => onContinue?.()} onBackToTown={onReturnToTown ?? onBack} />,
   ][flow.step - 1]
   const achievement = flow.step === 3 && !achievementSeen
     ? <AchievementScene mode={achievementModeFor(report)} deltas={foodHallDeltasForReport(report, reportBaselineFoodScore, locale)} locale={locale} onComplete={() => setAchievementSeen(true)} />
