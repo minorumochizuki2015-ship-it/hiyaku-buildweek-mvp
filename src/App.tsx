@@ -20,6 +20,7 @@ import { TownHomeScreen, type TownHomeGoal, type TownHomeParameter } from './scr
 import { WorkoutEntryScreen } from './screens/WorkoutEntryScreen'
 import { GoyoDetailScreen, type GoyoCheckpoint, type GoyoDuty, type GoyoGoal, type GoyoTownEffect } from './screens/GoyoDetailScreen'
 import { RecordBookScreen, type RecordBookRun } from './screens/RecordBookScreen'
+import { FlagGroundScreen } from './screens/FlagGroundScreen'
 import type { NutritionReport } from '../shared/nutrition'
 import { localizeContent, t, type Locale } from './i18n'
 
@@ -198,6 +199,14 @@ export function ComingSoonScreen({ tab, locale, onReturnToDispatch }: { tab: Exc
       </section>
     </main>
   )
+}
+
+export function FlagsTabContent({ courierFlagPower, locale, onWalk }: {
+  courierFlagPower: number
+  locale: Locale
+  onWalk: () => void
+}) {
+  return <FlagGroundScreen courierFlagPower={courierFlagPower} locale={locale} onWalk={onWalk} />
 }
 
 async function postApi<T>(path: string, body: MissionRequest | CompletionRequest, validate: (value: unknown) => value is T): Promise<T> {
@@ -853,7 +862,7 @@ export default function App() {
   } else if (selectedTab === 'records') {
     content = <RecordBookScreen runs={sessionRuns} meals={sessionMeals} locale={locale} onOpenGoyo={() => setSelectedTab('dispatch')} />
   } else if (selectedTab === 'flags') {
-    content = <ComingSoonScreen tab={selectedTab} locale={locale} onReturnToDispatch={() => setSelectedTab('dispatch')} />
+    content = <FlagsTabContent courierFlagPower={townResources.courierFlagPower} locale={locale} onWalk={() => setSelectedTab('workout')} />
   } else {
     content = <GoyoTabContent duty={goyoDuty} checkpoints={goyoCheckpoints} goals={goyoGoals} townEffects={goyoTownEffects} mikotoQuote={goyoDuty ? mikotoQuote : null} locale={locale} onAccept={() => setState(journeyStateAfterGoyoAccept())} onBack={() => setSelectedTab('town')} onGenerate={generateMission} generating={false} />
   }
