@@ -57,7 +57,7 @@ const copy = {
     recommended: '推奨の目安',
     statusLabels: { OK: '達成', Low: 'もう少し', High: 'とりすぎ' },
     sourceLabels: {
-      'open-food-facts': 'バーコード',
+      'open-food-facts': '食品DB',
       'gpt-5.6-sol': 'AI推定',
       'deterministic-fallback': 'カテゴリ推定',
     },
@@ -85,7 +85,7 @@ const copy = {
     recommended: 'Reference guide',
     statusLabels: { OK: 'Achieved', Low: 'Needs more', High: 'Too much' },
     sourceLabels: {
-      'open-food-facts': 'Barcode',
+      'open-food-facts': 'Food database',
       'gpt-5.6-sol': 'AI estimate',
       'deterministic-fallback': 'Category estimate',
     },

@@ -27,7 +27,7 @@ const copy = {
     subtitle: '無理のない次の一歩',
     mealTitle: '食事のおすすめ',
     mealLead: '魚定食か豆腐御膳を記録すると、御膳処が育ちます。',
-    mealGapStart: '不足していた',
+    mealGapStart: '少なめだった',
     mealGapEnd: 'を補えます。',
     menu: 'おすすめメニューを見る →',
     foodAlt: '魚定食の膳',

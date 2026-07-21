@@ -51,7 +51,7 @@ one request.
 npm run typecheck && npm run lint && npm run test && npm run build
 ```
 
-53 tests across 9 files at the time of writing.
+86 tests across 14 files at the time of writing.
 
 ---
 
@@ -73,7 +73,7 @@ protein but no fibre, or nothing at all. Most nutrition apps paper over that gap
 number. We ask `gpt-5.6-sol` for **only the missing keys**, and then show the user, per nutrient, where each
 figure came from:
 
-- **Barcode** — measured, straight from the matched Open Food Facts product
+- **Food database** — measured, straight from the matched Open Food Facts product
 - **AI estimate** — supplied by GPT-5.6 because the product record had a hole in it
 - **Category estimate** — neither was available, so a deterministic fallback by food category
 

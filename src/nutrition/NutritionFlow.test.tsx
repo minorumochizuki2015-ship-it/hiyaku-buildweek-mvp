@@ -48,16 +48,17 @@ describe('NutritionFlow', () => {
     expect(state.step).toBe(2)
   })
 
-  it('uses video for every successfully produced report, including a poor meal', () => {
-    expect(achievementModeFor(report)).toBe('video')
+  it('uses video only for the first meal celebration in a session, including a poor meal', () => {
+    expect(achievementModeFor(report, false)).toBe('video')
     expect(achievementModeFor({
       ...report,
       foodScore: 0,
       nutrients: report.nutrients.map((nutrient) => ({ ...nutrient, judgment: 'Low' as const })),
-    })).toBe('video')
+    }, false)).toBe('video')
+    expect(achievementModeFor(report, true)).toBe('light')
   })
 
-  it('does not replay the scene after it has completed, until another meal report is produced', () => {
+  it('reopens the delivery presentation for another report after the previous one completes', () => {
     let seen = achievementSeenReducer(false, { type: 'sceneComplete' })
     expect(seen).toBe(true)
 
