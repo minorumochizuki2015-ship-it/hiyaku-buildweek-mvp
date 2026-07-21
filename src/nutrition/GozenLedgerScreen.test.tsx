@@ -38,6 +38,21 @@ describe('GozenLedgerScreen', () => {
     expect(screen).toContain('整え札')
   })
 
+  it('shows the one logged item instead of invented meal slots', () => {
+    const matched = renderToStaticMarkup(<GozenLedgerScreen report={report} locale="en" />)
+    const unmatched = renderToStaticMarkup(<GozenLedgerScreen report={{ ...report, productName: null }} locale="en" />)
+
+    expect(matched).toContain('Logged item')
+    expect(matched).toContain('Courier bowl')
+    expect(matched).toContain('Matched product')
+    expect(matched).toContain('Rice bowl')
+    expect(matched).toContain('200 g')
+    expect(matched).not.toContain('Breakfast')
+    expect(matched).not.toContain('Water')
+    expect(unmatched).toContain('No product match. Nutrition figures are estimated.')
+    expect(unmatched).not.toContain('Matched product')
+  })
+
   it('switches every visible label between Japanese and English', () => {
     const japanese = renderToStaticMarkup(<GozenLedgerScreen report={report} distanceMetres={840} elapsedSeconds={25} locale="ja" />)
     const english = renderToStaticMarkup(<GozenLedgerScreen report={report} distanceMetres={840} elapsedSeconds={25} locale="en" />)

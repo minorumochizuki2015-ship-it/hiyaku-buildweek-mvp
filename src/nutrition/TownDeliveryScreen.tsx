@@ -88,10 +88,10 @@ const townEffects: readonly TownEffect[] = [
 ] as const
 
 const summaryItems = [
-  { icon: '🏘', label: copy.townVitality },
-  { icon: '🏮', label: copy.foodHall },
-  { icon: '👥', label: copy.supporterSatisfaction },
-  { icon: '🍵', label: copy.teaHouse },
+  { icon: '🏘', label: copy.townVitality, key: 'protein' },
+  { icon: '🏮', label: copy.foodHall, key: 'sodium' },
+  { icon: '👥', label: copy.supporterSatisfaction, key: 'fat' },
+  { icon: '🍵', label: copy.teaHouse, key: 'energy' },
 ] as const
 
 function text(value: LocalizedText, locale: Locale): string {
@@ -167,7 +167,9 @@ export function TownDeliveryScreen({ report, locale }: TownDeliveryScreenProps) 
             <li key={item.label.en}>
               <span aria-hidden="true">{item.icon}</span>
               <span>{text(item.label, locale)}</span>
-              <strong aria-label={locale === 'ja' ? '上昇' : 'Increase'}>↑</strong>
+              {nutrientsByKey.get(item.key)?.judgment === 'OK'
+                ? <strong aria-label={locale === 'ja' ? '上昇' : 'Increase'}>↑</strong>
+                : <strong className="g07-town-delivery__summary-neutral" aria-label={locale === 'ja' ? '上昇なし' : 'No increase'}>—</strong>}
             </li>
           ))}
         </ul>
