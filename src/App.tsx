@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import {
   isMission,
   isMissionCompletion,
@@ -14,13 +14,106 @@ import { distanceTargetMetres, rivalDistanceAtElapsedSeconds, type MovementMode,
 import { checkpointRouteState } from './checkpointRoute'
 import { ArrivalSeal, buildSealSummary, formatSealDate, sealCanvasDataUrl, type ArrivalSealData } from './ArrivalSeal'
 import { NutritionScreen } from './NutritionScreen'
+import { localizeContent, t, type Locale } from './i18n'
 
 type JourneyState = 'idle' | 'generating' | 'ready' | 'active' | 'paused' | 'completing' | 'completed' | 'nutrition'
+export type NavTab = 'town' | 'workout' | 'dispatch' | 'flags' | 'records'
+
+const NAV_ITEMS: ReadonlyArray<{ id: NavTab; icon: string; label: 'nav.town' | 'nav.workout' | 'nav.dispatch' | 'nav.flags' | 'nav.records' }> = [
+  { id: 'town', icon: '🏯', label: 'nav.town' },
+  { id: 'workout', icon: '🏃', label: 'nav.workout' },
+  { id: 'dispatch', icon: '📜', label: 'nav.dispatch' },
+  { id: 'flags', icon: '🚩', label: 'nav.flags' },
+  { id: 'records', icon: '📖', label: 'nav.records' },
+]
 
 interface JourneyStats {
   elapsedSeconds: number
   progress: number
   distanceMetres: number
+}
+
+/** The existing Accept Dispatch transition always enters the Journey renderer. */
+export function journeyStateAfterAccept(): Extract<JourneyState, 'ready'> {
+  return 'ready'
+}
+
+export function LanguageToggle({ locale, onToggle }: { locale: Locale; onToggle: () => void }) {
+  return (
+    <button
+      className="language-toggle"
+      type="button"
+      onClick={onToggle}
+      aria-label={locale === 'en' ? 'Switch to Japanese' : '英語に切り替える'}
+      title={locale === 'en' ? 'Switch to Japanese' : '英語に切り替える'}
+    >
+      {locale === 'en' ? '日本語' : 'EN'}
+    </button>
+  )
+}
+
+export function AppShell({ children, locale, onLocaleToggle, selectedTab, missionInProgress, onTabSelect }: {
+  children: ReactNode
+  locale: Locale
+  onLocaleToggle: () => void
+  selectedTab: NavTab
+  missionInProgress: boolean
+  onTabSelect: (tab: NavTab) => void
+}) {
+  const contentRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const content = contentRef.current
+    if (!content) return
+    const applyLocale = () => localizeContent(content, locale)
+    applyLocale()
+    const observer = new MutationObserver(applyLocale)
+    observer.observe(content, { childList: true, characterData: true, subtree: true, attributes: true, attributeFilter: ['alt', 'aria-label', 'placeholder', 'title'] })
+    return () => observer.disconnect()
+  }, [locale])
+
+  return (
+    <div className="app-shell">
+      <LanguageToggle locale={locale} onToggle={onLocaleToggle} />
+      <div className="app-shell-content" ref={contentRef} lang={locale}>
+        {children}
+      </div>
+      <nav className="bottom-nav" aria-label={t(locale, 'nav.aria')}>
+        {NAV_ITEMS.map((item) => {
+          const locked = missionInProgress && item.id !== 'dispatch'
+          return (
+            <button
+              className={`nav-item ${selectedTab === item.id ? 'is-active' : ''}`}
+              type="button"
+              key={item.id}
+              onClick={() => onTabSelect(item.id)}
+              disabled={locked}
+              aria-current={selectedTab === item.id ? 'page' : undefined}
+              title={locked ? (locale === 'en' ? 'Finish or pause the active mission before leaving Dispatch.' : '任務を終えるか一時停止してから、任務画面を離れてください。') : undefined}
+            >
+              <span className="nav-icon" aria-hidden="true">{item.icon}</span>
+              <span>{t(locale, item.label)}</span>
+            </button>
+          )
+        })}
+      </nav>
+    </div>
+  )
+}
+
+export function ComingSoonScreen({ tab, locale, onReturnToDispatch }: { tab: Exclude<NavTab, 'dispatch'>; locale: Locale; onReturnToDispatch: () => void }) {
+  const tabLabel = t(locale, `nav.${tab}` as 'nav.town' | 'nav.workout' | 'nav.flags' | 'nav.records')
+  return (
+    <main className="screen placeholder-screen" aria-labelledby="placeholder-title">
+      <section className="placeholder-panel">
+        <span className="placeholder-icon" aria-hidden="true">{NAV_ITEMS.find((item) => item.id === tab)?.icon}</span>
+        <p className="eyebrow">{t(locale, 'placeholder.eyebrow')}</p>
+        <h1 id="placeholder-title">{t(locale, 'placeholder.title', { tab: tabLabel })}</h1>
+        <p>{t(locale, 'placeholder.copy')}</p>
+        <button className="primary-button" type="button" onClick={onReturnToDispatch}>{t(locale, 'placeholder.return')}</button>
+      </section>
+    </main>
+  )
 }
 
 async function postApi<T>(path: string, body: MissionInput | CompletionSummary, validate: (value: unknown) => value is T): Promise<T> {
@@ -383,6 +476,8 @@ export function ArrivalScreen({ mission, completion, stats, targetDistanceMetres
 
 export default function App() {
   const [state, setState] = useState<JourneyState>('idle')
+  const [selectedTab, setSelectedTab] = useState<NavTab>('dispatch')
+  const [locale, setLocale] = useState<Locale>('en')
   const [mission, setMission] = useState<Mission | null>(null)
   const [stats, setStats] = useState<JourneyStats>({ elapsedSeconds: 0, progress: 0, distanceMetres: 0 })
   const [completion, setCompletion] = useState<MissionCompletion | null>(null)
@@ -486,21 +581,46 @@ export default function App() {
       setAvailableMinutes(input.availableMinutes)
       setMovementMode(selectedMovementMode)
       setLocationStatus('')
-      setState('ready')
+      setSelectedTab('dispatch')
+      setState(journeyStateAfterAccept())
     } catch {
       setState('idle')
     }
   }
 
-  if (state === 'idle' || state === 'generating') return <DispatchScreen onGenerate={generateMission} generating={state === 'generating'} />
-  if ((state === 'ready' || state === 'active' || state === 'paused' || state === 'completing') && activeMission) {
-    return <JourneyScreen mission={activeMission} state={state} stats={stats} targetDistanceMetres={targetDistanceMetres ?? 0} availableMinutes={availableMinutes} movementMode={movementMode} locationStatus={locationStatus} onPause={() => setState((current) => current === 'paused' ? 'active' : 'paused')} onEnd={() => {
+  const missionInProgress = state === 'ready' || state === 'active' || state === 'paused' || state === 'completing'
+  let content: ReactNode
+
+  if (selectedTab !== 'dispatch') {
+    content = <ComingSoonScreen tab={selectedTab} locale={locale} onReturnToDispatch={() => setSelectedTab('dispatch')} />
+  } else if (state === 'idle' || state === 'generating') {
+    content = <DispatchScreen onGenerate={generateMission} generating={state === 'generating'} />
+  } else if (missionInProgress && activeMission) {
+    content = <JourneyScreen mission={activeMission} state={state} stats={stats} targetDistanceMetres={targetDistanceMetres ?? 0} availableMinutes={availableMinutes} movementMode={movementMode} locationStatus={locationStatus} onPause={() => setState((current) => current === 'paused' ? 'active' : 'paused')} onEnd={() => {
       distanceMetresRef.current = targetDistanceMetres ?? 0
       setStats((current) => ({ ...current, progress: 100, distanceMetres: targetDistanceMetres ?? current.distanceMetres }))
       setState('completing')
     }} />
+  } else if (state === 'completed' && activeMission && completion) {
+    content = <ArrivalScreen mission={activeMission} completion={completion} stats={stats} targetDistanceMetres={targetDistanceMetres ?? 0} availableMinutes={availableMinutes} onRestart={() => {
+      setSelectedTab('dispatch')
+      setState('idle')
+    }} onNutrition={() => setState('nutrition')} />
+  } else if (state === 'nutrition') {
+    content = <NutritionScreen onBack={() => setState('completed')} />
+  } else {
+    content = <DispatchScreen onGenerate={generateMission} generating={false} />
   }
-  if (state === 'completed' && activeMission && completion) return <ArrivalScreen mission={activeMission} completion={completion} stats={stats} targetDistanceMetres={targetDistanceMetres ?? 0} availableMinutes={availableMinutes} onRestart={() => setState('idle')} onNutrition={() => setState('nutrition')} />
-  if (state === 'nutrition') return <NutritionScreen onBack={() => setState('completed')} />
-  return <DispatchScreen onGenerate={generateMission} generating={false} />
+
+  return (
+    <AppShell
+      locale={locale}
+      onLocaleToggle={() => setLocale((current) => current === 'en' ? 'ja' : 'en')}
+      selectedTab={selectedTab}
+      missionInProgress={missionInProgress}
+      onTabSelect={setSelectedTab}
+    >
+      {content}
+    </AppShell>
+  )
 }

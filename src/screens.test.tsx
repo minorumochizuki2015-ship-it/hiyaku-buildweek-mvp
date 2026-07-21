@@ -1,9 +1,10 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it, vi } from 'vitest'
-import { ArrivalScreen, DispatchScreen, JourneyScreen } from './App'
+import { AppShell, ArrivalScreen, DispatchScreen, JourneyScreen, LanguageToggle, journeyStateAfterAccept } from './App'
 import { checkpointRouteState } from './checkpointRoute'
 import { distanceTargetMetres, haversineDistanceMetres, rivalDistanceAtElapsedSeconds, rivalPaceMultiplier, startWalkTracking } from './movement'
 import { buildSealSummary, formatSealDate, sealCanvasDataUrl } from './ArrivalSeal'
+import { translateText, type Locale } from './i18n'
 import { mockCompleteMission, mockGenerateMission } from '../shared/mockMission'
 import { COURIERS, getCourier } from '../shared/couriers'
 import worker from '../worker/index'
@@ -52,6 +53,48 @@ describe('HIYAKU static screens', () => {
     expect(screen).toContain('carried for Ino Tadataka')
     expect(screen).toContain('測道星輪紋')
     expect(screen).not.toContain('meal-reward-kanto.mp4')
+  })
+})
+
+describe('NAVSHELL1', () => {
+  it('renders all five locked navigation tabs in their required order', () => {
+    const shell = renderToStaticMarkup(
+      <AppShell locale="en" onLocaleToggle={() => undefined} selectedTab="dispatch" missionInProgress={false} onTabSelect={() => undefined}>
+        <div>Mission content</div>
+      </AppShell>,
+    )
+    const labels = ['🏯', 'Town', '🏃', 'Workout', '📜', 'Dispatch', '🚩', 'Flags', '📖', 'Records']
+
+    expect((shell.match(/class="nav-item/g) ?? [])).toHaveLength(5)
+    let previousPosition = -1
+    for (const label of labels) {
+      const position = shell.indexOf(label)
+      expect(position).toBeGreaterThan(previousPosition)
+      previousPosition = position
+    }
+  })
+
+  it('tapping the language control changes a known English string to Japanese', () => {
+    let locale: Locale = 'en'
+    const control = LanguageToggle({
+      locale,
+      onToggle: () => { locale = locale === 'en' ? 'ja' : 'en' },
+    })
+
+    ;(control.props as { onClick: () => void }).onClick()
+
+    expect(locale).toBe('ja')
+    expect(translateText('Accept Dispatch', locale)).toBe('任務を受ける')
+  })
+
+  it('keeps the Dispatch → Accept transition on the existing Journey renderer', () => {
+    const screen = renderToStaticMarkup(
+      <JourneyScreen mission={mission} state={journeyStateAfterAccept()} stats={{ elapsedSeconds: 0, progress: 0, distanceMetres: 0 }} targetDistanceMetres={800} availableMinutes={10} movementMode="demo" locationStatus="" onPause={() => undefined} onEnd={() => undefined} />,
+    )
+
+    expect(journeyStateAfterAccept()).toBe('ready')
+    expect(screen).toContain('Mission ready')
+    expect(screen).toContain('End Mission')
   })
 })
 
