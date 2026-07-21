@@ -12,13 +12,17 @@ export const NUTRITION_STANDARD_LABELS: Record<NutritionStandard, string> = {
   international: 'International',
 }
 
+// A logged food is evaluated as one of three daily eating occasions. The UI still
+// displays the full daily guidance; this fraction is only for item scoring/status.
+export const SINGLE_ITEM_DAILY_REFERENCE_FRACTION = 1 / 3
+
 export interface NutrientDefinition {
   key: NutrientKey
   label: string
   edoLabel: string
   offField: string
   unit: 'kcal' | 'g'
-  // Retained for the Worker’s established Japanese baseline.
+  // Daily guidance shown in the comparison table.
   referenceValue: number
   // Single-meal comparison references for the client-side standard selector.
   referenceValues: Record<NutritionStandard, number>

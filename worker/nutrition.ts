@@ -1,5 +1,6 @@
 import {
   NUTRIENT_DEFINITIONS,
+  SINGLE_ITEM_DAILY_REFERENCE_FRACTION,
   type GapJudgment,
   type NutrientEstimate,
   type NutrientKey,
@@ -51,14 +52,34 @@ function isNutrientKey(value: unknown): value is NutrientKey {
   return typeof value === 'string' && NUTRIENT_DEFINITIONS.some((nutrient) => nutrient.key === value)
 }
 
-export function judgeGap(estimated: number, reference: number): GapJudgment {
-  if (estimated < 0.85 * reference) return 'Low'
-  if (estimated > 1.15 * reference) return 'High'
+function singleItemReferenceValue(dailyReference: number): number {
+  return dailyReference * SINGLE_ITEM_DAILY_REFERENCE_FRACTION
+}
+
+export function judgeGap(estimated: number, dailyReference: number): GapJudgment {
+  const singleItemReference = singleItemReferenceValue(dailyReference)
+  if (estimated < 0.85 * singleItemReference) return 'Low'
+  if (estimated > 1.15 * singleItemReference) return 'High'
   return 'OK'
 }
 
-export function foodScoreFor(judgments: readonly GapJudgment[]): number {
-  return Math.round(100 * judgments.filter((judgment) => judgment === 'OK').length / NUTRIENT_DEFINITIONS.length)
+function nutrientCreditFor(amount: number, dailyReference: number): number {
+  const ratio = amount / singleItemReferenceValue(dailyReference)
+  if (ratio >= 0.85 && ratio <= 1.15) return 1
+  if (ratio < 0.85) return Math.max(0, ratio / 0.85)
+
+  // Credit is flat in the 85–115% meal band. Below it, it declines linearly
+  // to zero at no intake; above it, the decline is half as steep, so excess is
+  // penalized without being harsher than an equally distant large undershoot.
+  return Math.max(0, 1 - (ratio - 1.15) / (2 * 0.85))
+}
+
+export function foodScoreFor(amounts: Readonly<Record<NutrientKey, number>>): number {
+  const totalCredit = NUTRIENT_DEFINITIONS.reduce(
+    (total, nutrient) => total + nutrientCreditFor(amounts[nutrient.key], nutrient.referenceValue),
+    0,
+  )
+  return Math.round(100 * totalCredit / NUTRIENT_DEFINITIONS.length)
 }
 
 async function fetchWithRetry(input: RequestInfo | URL, init?: RequestInit): Promise<Response | null> {
@@ -229,6 +250,6 @@ export async function buildNutritionReport(input: NutritionRequest, env: Env): P
     productName: product && typeof product.product_name === 'string' && product.product_name.trim() ? product.product_name.trim() : null,
     source,
     nutrients,
-    foodScore: foodScoreFor(nutrients.map((nutrient) => nutrient.judgment)),
+    foodScore: foodScoreFor(Object.fromEntries(nutrients.map((nutrient) => [nutrient.key, nutrient.amount])) as Record<NutrientKey, number>),
   }
 }
