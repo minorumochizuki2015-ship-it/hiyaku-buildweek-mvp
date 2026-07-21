@@ -1,4 +1,4 @@
-name = "hiyaku-worker-placeholder"
+name = "hikyaku-worker-placeholder"
 main = "worker/index.ts"
 compatibility_date = "2026-07-20"
 

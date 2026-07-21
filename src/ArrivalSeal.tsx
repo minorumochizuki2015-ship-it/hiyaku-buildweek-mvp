@@ -22,7 +22,7 @@ export function formatSealDate(date = new Date()): string {
 }
 
 export function buildSealSummary(data: ArrivalSealData): string {
-  return `My HIYAKU courier seal is stamped: ${cleanLine(data.rank, 72)} — ${cleanLine(data.missionTitle, 96)}, carried by ${cleanLine(data.courierGameName, 72)} for ${cleanLine(data.courierFigureEn, 72)} (${cleanLine(data.crestName, 72)}). ${cleanLine(data.distance, 24)} in ${cleanLine(data.duration, 24)}, ${cleanLine(data.completion, 24)} complete.`
+  return `My HIKYAKU courier seal is stamped: ${cleanLine(data.rank, 72)} — ${cleanLine(data.missionTitle, 96)}, carried by ${cleanLine(data.courierGameName, 72)} for ${cleanLine(data.courierFigureEn, 72)} (${cleanLine(data.crestName, 72)}). ${cleanLine(data.distance, 24)} in ${cleanLine(data.duration, 24)}, ${cleanLine(data.completion, 24)} complete.`
 }
 
 function wrapCanvasText(context: CanvasRenderingContext2D, value: string, maxWidth: number): string[] {
@@ -70,7 +70,7 @@ export function drawArrivalSeal(context: CanvasRenderingContext2D, data: Arrival
   context.fillStyle = '#f6d78f'
   context.font = '700 24px Georgia, serif'
   context.letterSpacing = '3px'
-  drawCentered(context, 'HIYAKU  ·  ARRIVAL SEAL', centreX, 88)
+  drawCentered(context, 'HIKYAKU  ·  ARRIVAL SEAL', centreX, 88)
   context.letterSpacing = '0px'
 
   context.fillStyle = '#eadfca'
@@ -147,9 +147,9 @@ export function sealCanvasDataUrl(data: ArrivalSealData): string | null {
 
 export function ArrivalSeal({ data }: { data: ArrivalSealData }) {
   return (
-    <section className="arrival-seal" aria-label="HIYAKU arrival seal">
+    <section className="arrival-seal" aria-label="HIKYAKU arrival seal">
       <div className="seal-certificate">
-        <p className="seal-brand">HIYAKU · ARRIVAL SEAL</p>
+        <p className="seal-brand">HIKYAKU · ARRIVAL SEAL</p>
         <p className="seal-mission">{data.missionTitle}</p>
         <p className="seal-courier">{data.courierGameName}</p>
         <p className="seal-figure">carried for {data.courierFigureEn}</p>

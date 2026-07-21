@@ -11,7 +11,7 @@ import worker from '../worker/index'
 
 const mission = mockGenerateMission({ availableMinutes: 10, energy: 'Steady', courierId: 'tadataka', displayName: 'Ada' })
 
-describe('HIYAKU static screens', () => {
+describe('HIKYAKU static screens', () => {
   it('renders Dispatch and its primary action', () => {
     const screen = renderToStaticMarkup(<DispatchScreen onGenerate={() => undefined} generating={false} />)
     expect(screen).toContain('Accept Dispatch')
@@ -48,7 +48,7 @@ describe('HIYAKU static screens', () => {
     expect(screen).toContain('/assets/arrival-honjin-goze.mp4')
     expect(screen).toContain('今日の一食')
     expect(screen).toContain('simulated AI pacer')
-    expect(screen).toContain('HIYAKU · ARRIVAL SEAL')
+    expect(screen).toContain('HIKYAKU · ARRIVAL SEAL')
     expect(screen).toContain('Share Seal')
     expect(screen).toContain('carried for Ino Tadataka')
     expect(screen).toContain('測道星輪紋')
@@ -163,7 +163,7 @@ describe('arrival seal serialization', () => {
       crestName: '測道星輪紋',
     })
 
-    expect(summary).toBe('My HIYAKU courier seal is stamped: Swift Courier — The Lantern Ledger, carried by 星図ノ測姫・忠敬 for Ino Tadataka (測道星輪紋). 800m in 10:00, 100% complete.')
+    expect(summary).toBe('My HIKYAKU courier seal is stamped: Swift Courier — The Lantern Ledger, carried by 星図ノ測姫・忠敬 for Ino Tadataka (測道星輪紋). 800m in 10:00, 100% complete.')
     expect(summary).not.toMatch(/latitude|longitude|coordinate|日本橋/i)
     expect(formatSealDate(new Date(2026, 6, 21))).toBe('EDO · 2026.07.21')
   })

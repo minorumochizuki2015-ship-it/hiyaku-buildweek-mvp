@@ -1,7 +1,7 @@
-# HIYAKU — OpenAI Build Week submission
+# HIKYAKU — OpenAI Build Week submission
 
 ## One-liner
-HIYAKU turns a short everyday walk into a personalized Edo courier mission powered by GPT-5.6.
+HIKYAKU turns a short everyday walk into a personalized Edo courier mission powered by GPT-5.6.
 
 ## Track
 Apps for Your Life.
@@ -65,7 +65,7 @@ No auth, no DB, no billing, no push notifications. State machine:
 - At 02:00 → submit regardless of polish; only fix submission-blocking issues after.
 
 ## Required in submission
-Devpost: project name `HIYAKU`, subtitle "An AI Edo Courier Companion for
+Devpost: project name `HIKYAKU`, subtitle "An AI Edo Courier Companion for
 Everyday Walking", track Apps for Your Life, English description, public
 YouTube demo video (<=3 min), working URL, this repo, test instructions,
 Codex `/feedback` session ID, 3 screenshots, explicit description of how

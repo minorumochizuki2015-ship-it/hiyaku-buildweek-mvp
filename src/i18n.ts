@@ -14,27 +14,27 @@ type TranslationKey =
 
 const UI_COPY: Record<Locale, Record<TranslationKey, string>> = {
   en: {
-    'nav.aria': 'HIYAKU navigation',
+    'nav.aria': 'HIKYAKU navigation',
     'nav.town': 'Town',
     'nav.workout': 'Workout',
     'nav.dispatch': 'Dispatch',
     'nav.flags': 'Flags',
     'nav.records': 'Records',
-    'placeholder.eyebrow': 'HIYAKU LEDGER',
+    'placeholder.eyebrow': 'HIKYAKU LEDGER',
     'placeholder.title': '{tab} is coming soon.',
-    'placeholder.copy': 'This destination is reserved for a future HIYAKU chapter. Your courier mission remains available from Dispatch.',
+    'placeholder.copy': 'This destination is reserved for a future HIKYAKU chapter. Your courier mission remains available from Dispatch.',
     'placeholder.return': 'Return to Dispatch',
   },
   ja: {
-    'nav.aria': 'HIYAKU ナビゲーション',
+    'nav.aria': 'HIKYAKU ナビゲーション',
     'nav.town': '町',
     'nav.workout': '運動',
     'nav.dispatch': '任務',
     'nav.flags': '旗',
     'nav.records': '記録',
-    'placeholder.eyebrow': 'HIYAKU 帳簿',
+    'placeholder.eyebrow': 'HIKYAKU 帳簿',
     'placeholder.title': '{tab} は準備中です。',
-    'placeholder.copy': 'この行き先は、HIYAKU の次章のために用意されています。飛脚任務は「任務」からいつでも続けられます。',
+    'placeholder.copy': 'この行き先は、HIKYAKU の次章のために用意されています。飛脚任務は「任務」からいつでも続けられます。',
     'placeholder.return': '任務へ戻る',
   },
 }
@@ -44,7 +44,7 @@ const UI_COPY: Record<Locale, Record<TranslationKey, string>> = {
  * can localize the existing frozen screen components without changing them.
  */
 const JA_TEXT: Record<string, string> = {
-  'HIYAKU / EDO COURIER': '飛脚 HIYAKU / 江戸の配達人',
+  'HIKYAKU / EDO COURIER': '飛脚 HIKYAKU / 江戸の配達人',
   EDO: '江戸',
   'Turn a short walk into an Edo courier mission.': '短い散歩を、江戸の飛脚任務に変えよう。',
   'Edo courier introduction': '江戸の飛脚の紹介',
@@ -116,7 +116,7 @@ const JA_TEXT: Record<string, string> = {
   'Sharing was cancelled. Your result is still complete.': '共有を中止しました。任務結果は完了したままです。',
   'Close meal video': '食事動画を閉じる',
   "COURIER'S REWARD": '飛脚のご褒美',
-  'HIYAKU · ARRIVAL SEAL': 'HIYAKU · 到着の印',
+  'HIKYAKU · ARRIVAL SEAL': 'HIKYAKU · 到着の印',
   'carried for ': '届け先: ',
   DELIVERED: '配達済',
   distance: '距離',

@@ -201,7 +201,7 @@ export function DispatchScreen({ onGenerate, generating }: { onGenerate: (input:
       <header className="masthead">
         <span className="brand-mark" aria-hidden="true">飛</span>
         <div>
-          <p className="eyebrow">HIYAKU / EDO COURIER</p>
+          <p className="eyebrow">HIKYAKU / EDO COURIER</p>
           <h1 id="dispatch-title">Turn a short walk into an Edo courier mission.</h1>
         </div>
       </header>
@@ -409,12 +409,12 @@ export function ArrivalScreen({ mission, completion, stats, targetDistanceMetres
         }
       }
       if (file && navigator.canShare?.({ files: [file] }) && navigator.share) {
-        await navigator.share({ title: 'My HIYAKU arrival seal', text, files: [file] })
+        await navigator.share({ title: 'My HIKYAKU arrival seal', text, files: [file] })
         setShareStatus('Seal shared as an image.')
         return
       }
       if (navigator.share) {
-        await navigator.share({ title: 'My HIYAKU arrival seal', text })
+        await navigator.share({ title: 'My HIKYAKU arrival seal', text })
         setShareStatus('Seal summary shared.')
       } else if (image) {
         const link = document.createElement('a')

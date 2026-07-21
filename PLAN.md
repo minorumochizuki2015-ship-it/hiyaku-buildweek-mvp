@@ -41,7 +41,7 @@ writes application code directly.
 - README, video, Codex session ID, and Devpost fields are all filled in.
 
 ## README required sections (write at 20:00-21:30)
-1. What HIYAKU solves
+1. What HIKYAKU solves
 2. Working demo URL
 3. How to run locally
 4. How to test without walking

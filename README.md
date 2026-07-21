@@ -1,6 +1,6 @@
-# HIYAKU
+# HIKYAKU
 
-HIYAKU is a mobile-first Edo courier companion that turns a short everyday walk into a small mission.
+HIKYAKU is a mobile-first Edo courier companion that turns a short everyday walk into a small mission.
 
 ## How to run locally
 
