@@ -13,8 +13,9 @@ import { COURIERS, getCourier, type CourierId } from '../shared/couriers'
 import { distanceTargetMetres, rivalDistanceAtElapsedSeconds, type MovementMode, startWalkTracking } from './movement'
 import { checkpointRouteState } from './checkpointRoute'
 import { ArrivalSeal, buildSealSummary, formatSealDate, sealCanvasDataUrl, type ArrivalSealData } from './ArrivalSeal'
+import { NutritionScreen } from './NutritionScreen'
 
-type JourneyState = 'idle' | 'generating' | 'ready' | 'active' | 'paused' | 'completing' | 'completed'
+type JourneyState = 'idle' | 'generating' | 'ready' | 'active' | 'paused' | 'completing' | 'completed' | 'nutrition'
 
 interface JourneyStats {
   elapsedSeconds: number
@@ -271,13 +272,14 @@ export function JourneyScreen({ mission, state, stats, targetDistanceMetres, ava
   )
 }
 
-export function ArrivalScreen({ mission, completion, stats, targetDistanceMetres, availableMinutes, onRestart }: {
+export function ArrivalScreen({ mission, completion, stats, targetDistanceMetres, availableMinutes, onRestart, onNutrition }: {
   mission: Mission
   completion: MissionCompletion
   stats: JourneyStats
   targetDistanceMetres: number
   availableMinutes: AvailableMinutes
   onRestart: () => void
+  onNutrition?: () => void
 }) {
   const courier = getCourier(mission.courierId)
   const distance = Math.round(stats.distanceMetres)
@@ -357,6 +359,7 @@ export function ArrivalScreen({ mission, completion, stats, targetDistanceMetres
       <button className="meal-button" type="button" onClick={() => setMealOpen(true)}>
         <span aria-hidden="true">✦</span> 今日の一食 <small>Watch the courier's reward</small>
       </button>
+      {onNutrition && <button className="nutrition-link" type="button" onClick={onNutrition}>食の帳簿 <small>View nutrition report</small></button>}
       <div className="arrival-actions">
         <button className="secondary-button" type="button" onClick={share}>Share Seal</button>
         <button className="primary-button compact" type="button" onClick={onRestart}>Start Another Mission</button>
@@ -497,6 +500,7 @@ export default function App() {
       setState('completing')
     }} />
   }
-  if (state === 'completed' && activeMission && completion) return <ArrivalScreen mission={activeMission} completion={completion} stats={stats} targetDistanceMetres={targetDistanceMetres ?? 0} availableMinutes={availableMinutes} onRestart={() => setState('idle')} />
+  if (state === 'completed' && activeMission && completion) return <ArrivalScreen mission={activeMission} completion={completion} stats={stats} targetDistanceMetres={targetDistanceMetres ?? 0} availableMinutes={availableMinutes} onRestart={() => setState('idle')} onNutrition={() => setState('nutrition')} />
+  if (state === 'nutrition') return <NutritionScreen onBack={() => setState('completed')} />
   return <DispatchScreen onGenerate={generateMission} generating={false} />
 }

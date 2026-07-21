@@ -7,6 +7,8 @@ import {
   type MissionInput,
 } from '../shared/mockMission'
 import { COURIERS } from '../shared/couriers'
+import { isNutritionRequest } from '../shared/nutrition'
+import { buildNutritionReport } from './nutrition'
 
 interface Env {
   OPENAI_API_KEY?: string
@@ -194,6 +196,12 @@ export default {
     if (request.method !== 'POST') return json({ error: 'Use POST for this endpoint.' }, 405)
 
     const body = await readJson(request)
+    if (url.pathname === '/api/nutrition') {
+      if (!isNutritionRequest(body)) {
+        return json({ error: 'Invalid nutrition input. Expected a meal description and an amount from 25 to 2000 grams.' }, 400)
+      }
+      return json(await buildNutritionReport(body, env))
+    }
     if (url.pathname === '/api/mission') {
       if (!isMissionInput(body)) {
         return json({ error: 'Invalid mission input. Expected availableMinutes (5, 10, or 15), energy, courierId, and optional displayName.' }, 400)

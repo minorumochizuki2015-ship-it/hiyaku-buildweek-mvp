@@ -168,6 +168,39 @@ legend, .name-field > span { display: block; margin-bottom: 9px; color: #e8e4dc;
 .meal-button:hover { background: rgb(247 217 138 / 15%); }
 .share-status { min-height: 1.3em; margin: 12px 0 0; color: #c9c5d0; font-size: .8rem; text-align: center; }
 
+.nutrition-link { display: grid; width: 100%; grid-template-columns: 1fr; gap: 3px; margin: 2px 0 16px; padding: 11px 13px; border: 1px solid rgb(156 120 255 / 60%); border-radius: 11px; background: rgb(156 120 255 / 12%); color: #e4daff; font-weight: 800; text-align: left; }
+.nutrition-link small { color: #c9c5d0; font-size: .72rem; font-weight: 600; }
+.nutrition-link:hover { background: rgb(156 120 255 / 21%); }
+
+.nutrition-screen { display: flex; flex-direction: column; gap: 18px; background: radial-gradient(circle at 84% 4%, rgb(244 185 66 / 18%), transparent 27%), linear-gradient(145deg, #171631, #0c1022 70%); }
+.nutrition-header h1 { color: #fff3d5; }
+.nutrition-header > p:last-child { max-width: 430px; margin: 12px 0 0; color: #d4cddd; line-height: 1.55; }
+.nutrition-back { margin: 0 0 20px; padding: 0; border: 0; background: transparent; color: #f7d98a; font-size: .78rem; font-weight: 800; }
+.nutrition-form { display: grid; gap: 13px; padding: 16px; border: 1px solid rgb(247 217 138 / 30%); border-radius: 14px; background: rgb(247 242 232 / 6%); }
+.nutrition-form label { display: grid; gap: 7px; color: #e8e4dc; font-size: .76rem; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; }
+.nutrition-form input { width: 100%; min-height: 47px; padding: 0 12px; border: 1px solid rgb(247 242 232 / 30%); border-radius: 9px; background: #11162c; color: #fffaf0; }
+.nutrition-status { min-height: 1.4em; margin: 0; color: #f7d98a; font-weight: 700; line-height: 1.45; }
+.nutrition-report { display: grid; gap: 13px; }
+.nutrition-summary { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 16px; border: 1px solid rgb(244 185 66 / 46%); border-radius: 14px; background: linear-gradient(135deg, rgb(244 185 66 / 20%), rgb(156 120 255 / 12%)); }
+.nutrition-summary .eyebrow { margin-bottom: 2px; }
+.nutrition-summary > div > strong { color: #fff4ca; font-family: Georgia, serif; font-size: 3rem; line-height: .9; }
+.nutrition-summary > div > span { margin-left: 4px; color: #e8e4dc; font-size: .82rem; font-weight: 800; }
+.nutrition-summary > p { display: grid; margin: 0; color: #d4cddd; font-size: .78rem; line-height: 1.45; text-align: right; }
+.nutrition-summary b { color: #fff3d5; }
+.nutrition-summary small { margin-top: 5px; }
+.nutrition-note { margin: 0; color: #c9c5d0; font-size: .74rem; line-height: 1.45; }
+.nutrient-list { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.nutrient-list li { display: grid; grid-template-columns: 40px 1fr auto auto; gap: 9px; align-items: center; padding: 10px; border: 1px solid rgb(247 242 232 / 16%); border-radius: 10px; background: rgb(247 242 232 / 5%); }
+.nutrient-edo { color: #f7d98a; font-family: Georgia, "Hiragino Mincho ProN", serif; font-size: .66rem; font-weight: 800; line-height: 1.15; }
+.nutrient-list div { display: grid; gap: 3px; }
+.nutrient-list strong { color: #fffaf0; font-size: .87rem; }
+.nutrient-list small { color: #c9c5d0; font-size: .62rem; line-height: 1.2; }
+.nutrient-list > li > b { color: #f7d98a; font-size: .87rem; white-space: nowrap; }
+.nutrient-list em { min-width: 42px; padding: 4px 5px; border-radius: 999px; font-size: .62rem; font-style: normal; font-weight: 900; text-align: center; }
+.gap-low { background: rgb(103 163 255 / 20%); color: #a8d0ff; }
+.gap-ok { background: rgb(102 202 142 / 18%); color: #adf0c4; }
+.gap-high { background: rgb(244 145 99 / 20%); color: #ffc3a5; }
+
 .meal-modal-backdrop { position: fixed; z-index: 10; inset: 0; display: grid; padding: 20px; place-items: center; background: rgb(3 5 14 / 83%); }
 .meal-modal { position: relative; width: min(100%, 640px); padding: 23px 16px 16px; border: 1px solid rgb(247 217 138 / 54%); border-radius: 16px; background: #171631; box-shadow: 0 20px 60px rgb(0 0 0 / 50%); }
 .meal-modal h2 { margin-bottom: 14px; color: #fffaf0; }
