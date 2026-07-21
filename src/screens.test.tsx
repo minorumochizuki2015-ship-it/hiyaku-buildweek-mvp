@@ -1,10 +1,10 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it, vi } from 'vitest'
-import { AppShell, ArrivalScreen, DispatchScreen, JourneyScreen, LanguageToggle, journeyStateAfterAccept, nutritionStateFor } from './App'
+import { AppShell, ArrivalScreen, DispatchScreen, JourneyScreen, LanguageToggle, journeyStateAfterAccept, nutritionStateFor, shouldDismissGoyoHelp } from './App'
 import { checkpointRouteState } from './checkpointRoute'
 import { distanceTargetMetres, haversineDistanceMetres, rivalDistanceAtElapsedSeconds, rivalPaceMultiplier, startWalkTracking } from './movement'
 import { buildSealSummary, formatSealDate, sealCanvasDataUrl } from './ArrivalSeal'
-import { translateText, type Locale } from './i18n'
+import { t, translateText, type Locale } from './i18n'
 import { mockCompleteMission, mockGenerateMission } from '../shared/mockMission'
 import { MIKOTO } from '../shared/couriers'
 import worker from '../worker/index'
@@ -75,15 +75,33 @@ describe('NAVSHELL1', () => {
         <div>Mission content</div>
       </AppShell>,
     )
-    const labels = ['🏯', 'Town', '🏃', 'Workout', '📜', 'Dispatch', '🚩', 'Flags', '📖', 'Records']
+    const labels = ['🏯', 'Town', '🏃', 'Workout', '📜', 'Goyo', '🚩', 'Flags', '📖', 'Records']
 
-    expect((shell.match(/class="nav-item/g) ?? [])).toHaveLength(5)
+    expect((shell.match(/class="nav-item /g) ?? [])).toHaveLength(5)
     let previousPosition = -1
     for (const label of labels) {
       const position = shell.indexOf(label)
       expect(position).toBeGreaterThan(previousPosition)
       previousPosition = position
     }
+    expect(shell).toContain('aria-label="Explain Goyo"')
+    expect(shell).toContain('▲')
+    expect(shell.indexOf('app-shell-header')).toBeLessThan(shell.indexOf('app-shell-content'))
+    expect(t('en', 'nav.goyoHelp.copy')).toBe('Goyo — today\'s courier duty from the Nihonbashi headquarters.')
+  })
+
+  it('uses the frozen Japanese labels and recognizes Escape as the Goyo-help dismiss key', () => {
+    const shell = renderToStaticMarkup(
+      <AppShell locale="ja" onLocaleToggle={() => undefined} selectedTab="dispatch" missionInProgress={false} onTabSelect={() => undefined}>
+        <div>任務内容</div>
+      </AppShell>,
+    )
+
+    for (const label of ['町', 'ワークアウト', '御用', '旗場', '記録帳']) expect(shell).toContain(label)
+    expect(shell).toContain('aria-label="御用の説明を表示"')
+    expect(t('ja', 'nav.goyoHelp.copy')).toBe('御用 — 日本橋本陣から届く、本日のつとめ。')
+    expect(shouldDismissGoyoHelp('Escape')).toBe(true)
+    expect(shouldDismissGoyoHelp('Enter')).toBe(false)
   })
 
   it('tapping the language control changes a known English string to Japanese', () => {

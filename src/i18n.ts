@@ -7,6 +7,8 @@ type TranslationKey =
   | 'nav.dispatch'
   | 'nav.flags'
   | 'nav.records'
+  | 'nav.goyoHelp.aria'
+  | 'nav.goyoHelp.copy'
   | 'placeholder.eyebrow'
   | 'placeholder.title'
   | 'placeholder.copy'
@@ -17,9 +19,11 @@ const UI_COPY: Record<Locale, Record<TranslationKey, string>> = {
     'nav.aria': 'HIKYAKU navigation',
     'nav.town': 'Town',
     'nav.workout': 'Workout',
-    'nav.dispatch': 'Dispatch',
+    'nav.dispatch': 'Goyo',
     'nav.flags': 'Flags',
     'nav.records': 'Records',
+    'nav.goyoHelp.aria': 'Explain Goyo',
+    'nav.goyoHelp.copy': 'Goyo — today\'s courier duty from the Nihonbashi headquarters.',
     'placeholder.eyebrow': 'HIKYAKU LEDGER',
     'placeholder.title': '{tab} is coming soon.',
     'placeholder.copy': 'This destination is reserved for a future HIKYAKU chapter. Your courier mission remains available from Dispatch.',
@@ -28,10 +32,12 @@ const UI_COPY: Record<Locale, Record<TranslationKey, string>> = {
   ja: {
     'nav.aria': 'HIKYAKU ナビゲーション',
     'nav.town': '町',
-    'nav.workout': '運動',
-    'nav.dispatch': '任務',
-    'nav.flags': '旗',
-    'nav.records': '記録',
+    'nav.workout': 'ワークアウト',
+    'nav.dispatch': '御用',
+    'nav.flags': '旗場',
+    'nav.records': '記録帳',
+    'nav.goyoHelp.aria': '御用の説明を表示',
+    'nav.goyoHelp.copy': '御用 — 日本橋本陣から届く、本日のつとめ。',
     'placeholder.eyebrow': 'HIKYAKU 帳簿',
     'placeholder.title': '{tab} は準備中です。',
     'placeholder.copy': 'この行き先は、HIKYAKU の次章のために用意されています。飛脚任務は「任務」からいつでも続けられます。',
