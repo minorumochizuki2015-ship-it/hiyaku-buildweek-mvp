@@ -1,4 +1,5 @@
 import {
+  contributionPercent,
   NUTRIENT_DEFINITIONS,
   NUTRITION_STANDARD_LABELS,
   NUTRITION_STANDARDS,
@@ -33,19 +34,21 @@ interface DisplayNutrient {
   referenceValue: number
   source: NutritionReport['nutrients'][number]['source']
   judgment: GapJudgment
+  contribution: number
 }
 
 const copy = {
   ja: {
-    title: '栄養の参考比較',
+    title: '食品の栄養貢献',
     trend: '記録上の傾向',
     standard: '比較基準',
     nutrient: '栄養素',
-    estimate: '今日の推定',
-    reference: '1食あたりの目安',
-    status: '状態',
+    estimate: 'この食品の量',
+    reference: '1食の目安',
+    contribution: '目安への割合',
+    status: '注目',
     source: 'ソース',
-    disclaimer: '※推奨値は性別・年齢・活動量により異なります。これは一般的な参考です。表示する目安は1日の基準値の1食分であり、1日合計ではありません。基準は 日本 / FDA / EU / 国際 に切替できます。',
+    disclaimer: '※この食品が1食の目安に対してどの程度を担うかを示しています。単品で1食全体を満たす必要はありません。目安は性別・年齢・活動量により異なる一般的な参考です。基準は 日本 / FDA / EU / 国際 に切替できます。',
     aiNotNeeded: 'GPT-5.6は不要 — Open Food Factsが全項目をカバーしました',
     aiSucceeded: (estimatedCount: number) => `GPT-5.6が6項目中${estimatedCount}項目を推定しました`,
     aiNoKey: 'GPT-5.6は利用できません — カテゴリ推定を表示しています',
@@ -55,7 +58,7 @@ const copy = {
     chartLabel: '栄養バランスの六角レーダーチャート',
     today: '今日の傾向',
     recommended: '推奨の目安',
-    statusLabels: { OK: '達成', Low: 'もう少し', High: 'とりすぎ' },
+    statusLabels: { OK: '—', Low: '—', High: '多めの量' },
     sourceLabels: {
       'open-food-facts': '食品DB',
       'gpt-5.6-sol': 'AI推定',
@@ -65,15 +68,16 @@ const copy = {
     trendSuffix: '参考',
   },
   en: {
-    title: 'Nutrition reference comparison',
+    title: 'Item nutrition contribution',
     trend: 'Trends in your record',
     standard: 'Comparison standard',
     nutrient: 'Nutrient',
-    estimate: 'Today’s estimate',
+    estimate: 'This item',
     reference: 'Per-meal guide',
-    status: 'Status',
+    contribution: 'Contribution',
+    status: 'Note',
     source: 'Source',
-    disclaimer: 'Reference values vary by sex, age, and activity level. They are general guidance only. The guide shown is a per-meal portion of the daily reference, not the daily total. Switch between Japan, FDA, EU, and International standards.',
+    disclaimer: 'This shows what this item contributes toward a one-meal guide. A single ingredient is not expected to complete a meal. Guides vary by sex, age, and activity level and are general reference only. Switch between Japan, FDA, EU, and International standards.',
     aiNotNeeded: 'GPT-5.6 was not needed — Open Food Facts covered all values',
     aiSucceeded: (estimatedCount: number) => `GPT-5.6 estimated ${estimatedCount} of 6 values`,
     aiNoKey: 'GPT-5.6 unavailable — showing category estimates',
@@ -83,7 +87,7 @@ const copy = {
     chartLabel: 'Six-axis nutrition balance radar chart',
     today: 'Today’s trend',
     recommended: 'Reference guide',
-    statusLabels: { OK: 'Achieved', Low: 'Needs more', High: 'Too much' },
+    statusLabels: { OK: '—', Low: '—', High: 'Notable amount' },
     sourceLabels: {
       'open-food-facts': 'Food database',
       'gpt-5.6-sol': 'AI estimate',
@@ -131,6 +135,7 @@ function displayNutrients(report: NutritionReport, standard: NutritionStandard, 
       referenceValue: perMealReferenceValue(definition, standard),
       source: nutrient?.source ?? 'deterministic-fallback',
       judgment: judgeGap(nutrient?.amount ?? 0, perMealReferenceValue(definition, standard)),
+      contribution: contributionPercent(nutrient?.amount ?? 0, perMealReferenceValue(definition, standard)),
     }
   })
 }
@@ -170,6 +175,7 @@ export function NutrientCompareScreen({ report, standard, onStandardChange, loca
               <th scope="col">{text.nutrient}</th>
               <th scope="col">{text.estimate}</th>
               <th scope="col">{text.reference}</th>
+              <th scope="col">{text.contribution}</th>
               <th scope="col">{text.status}</th>
               <th scope="col">{text.source}</th>
             </tr>
@@ -183,8 +189,9 @@ export function NutrientCompareScreen({ report, standard, onStandardChange, loca
                 </th>
                 <td>{formatAmount(nutrient.amount)} {nutrient.unit}</td>
                 <td data-testid={`g07-reference-${nutrient.key}`}>{formatAmount(nutrient.referenceValue)} {nutrient.unit}</td>
+                <td data-testid={`g07-contribution-${nutrient.key}`}>{nutrient.contribution}%</td>
                 <td>
-                  <span className={`g07-status-pill g07-status-${nutrient.judgment.toLowerCase()}`}>{text.statusLabels[nutrient.judgment]}</span>
+                  {nutrient.judgment === 'High' && <span className="g07-status-pill g07-status-high">{text.statusLabels.High}</span>}
                 </td>
                 <td className="g07-source-label">
                   {nutrient.source === 'open-food-facts'

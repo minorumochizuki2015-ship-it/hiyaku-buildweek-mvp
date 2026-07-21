@@ -1,4 +1,5 @@
 import {
+  foodScoreFor,
   judgeGap,
   NUTRIENT_DEFINITIONS,
   perMealReferenceValue,
@@ -10,7 +11,7 @@ import {
   type NutritionRequest,
 } from '../shared/nutrition'
 
-export { judgeGap } from '../shared/nutrition'
+export { foodScoreFor, judgeGap } from '../shared/nutrition'
 
 interface Env {
   OPENAI_API_KEY?: string
@@ -58,25 +59,6 @@ function isFiniteNonNegativeNumber(value: unknown): value is number {
 
 function isNutrientKey(value: unknown): value is NutrientKey {
   return typeof value === 'string' && NUTRIENT_DEFINITIONS.some((nutrient) => nutrient.key === value)
-}
-
-function nutrientCreditFor(amount: number, perMealReference: number): number {
-  const ratio = amount / perMealReference
-  if (ratio >= 0.85 && ratio <= 1.15) return 1
-  if (ratio < 0.85) return Math.max(0, ratio / 0.85)
-
-  // Credit is flat in the 85–115% meal band. Below it, it declines linearly
-  // to zero at no intake; above it, the decline is half as steep, so excess is
-  // penalized without being harsher than an equally distant large undershoot.
-  return Math.max(0, 1 - (ratio - 1.15) / (2 * 0.85))
-}
-
-export function foodScoreFor(amounts: Readonly<Record<NutrientKey, number>>): number {
-  const totalCredit = NUTRIENT_DEFINITIONS.reduce(
-    (total, nutrient) => total + nutrientCreditFor(amounts[nutrient.key], perMealReferenceValue(nutrient, 'japan')),
-    0,
-  )
-  return Math.round(100 * totalCredit / NUTRIENT_DEFINITIONS.length)
 }
 
 async function fetchWithRetry(input: RequestInfo | URL, init?: RequestInit): Promise<Response | null> {

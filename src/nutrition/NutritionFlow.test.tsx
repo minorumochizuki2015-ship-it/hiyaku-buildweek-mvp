@@ -1,6 +1,6 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it, vi } from 'vitest'
-import type { NutritionReport } from '../../shared/nutrition'
+import { foodScoreFor, judgeGap, NUTRIENT_DEFINITIONS, perMealReferenceValue, type NutrientKey, type NutritionReport } from '../../shared/nutrition'
 import { GozenLedgerScreen } from './GozenLedgerScreen'
 import {
   achievementModeFor,
@@ -91,14 +91,19 @@ describe('NutritionFlow', () => {
       expect(report).toEqual(fallback)
       expect(report.source).toBe('deterministic-fallback')
       expect(report.nutrients).toEqual([
-        { key: 'energy', amount: 300, source: 'deterministic-fallback', judgment: 'Low' },
+        { key: 'energy', amount: 300, source: 'deterministic-fallback', judgment: 'OK' },
         { key: 'protein', amount: 12, source: 'deterministic-fallback', judgment: 'OK' },
         { key: 'fat', amount: 10, source: 'deterministic-fallback', judgment: 'OK' },
         { key: 'carbohydrates', amount: 40, source: 'deterministic-fallback', judgment: 'OK' },
-        { key: 'fiber', amount: 6, source: 'deterministic-fallback', judgment: 'High' },
+        { key: 'fiber', amount: 6, source: 'deterministic-fallback', judgment: 'OK' },
         { key: 'sodium', amount: 0.5, source: 'deterministic-fallback', judgment: 'OK' },
       ])
-      expect(report.foodScore).toBe(95)
+      const amounts = Object.fromEntries(report.nutrients.map((nutrient) => [nutrient.key, nutrient.amount])) as Record<NutrientKey, number>
+      expect(report.foodScore).toBe(62)
+      expect(report.foodScore).toBe(foodScoreFor(amounts))
+      expect(report.nutrients.map((nutrient) => nutrient.judgment)).toEqual(
+        NUTRIENT_DEFINITIONS.map((definition) => judgeGap(amounts[definition.key], perMealReferenceValue(definition, 'japan'))),
+      )
       expect(screen).toContain('Offline demo — nutrition estimated locally')
       expect(localNutritionReport('onigiri', 200, 'ja').aiAttempt).toEqual({ status: 'failed', estimatedCount: 0, reason: 'オフラインのデモ表示 — 栄養値は端末内で推定しています' })
     } finally {

@@ -1,20 +1,20 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { isNutritionReport, NUTRIENT_DEFINITIONS, perMealReferenceValue, type NutrientKey } from '../shared/nutrition'
+import { contributionPercent, isNutritionReport, NUTRIENT_DEFINITIONS, perMealReferenceValue, type NutrientKey } from '../shared/nutrition'
 import { buildNutritionReport, foodScoreFor, judgeGap } from './nutrition'
 
 type Amounts = Record<NutrientKey, number>
 
 const foods: ReadonlyArray<{ name: string; amounts: Amounts }> = [
   { name: 'onigiri', amounts: { energy: 320, protein: 5, fat: 1, carbohydrates: 74, fiber: 1, sodium: 0.7 } },
-  { name: 'tofu', amounts: { energy: 114, protein: 12, fat: 7.2, carbohydrates: 2.9, fiber: 0.5, sodium: 0.015 } },
+  { name: '200 g plain tofu', amounts: { energy: 302, protein: 34, fat: 18, carbohydrates: 5.2, fiber: 2.8, sodium: 0.04 } },
   { name: 'grilled salmon', amounts: { energy: 250, protein: 27, fat: 15, carbohydrates: 0, fiber: 0, sodium: 0.08 } },
   { name: 'miso soup', amounts: { energy: 40, protein: 3, fat: 1.5, carbohydrates: 5, fiber: 1, sodium: 1 } },
   { name: 'Kit Kat', amounts: { energy: 230, protein: 3, fat: 12, carbohydrates: 28, fiber: 1, sodium: 0.12 } },
   { name: 'Coca-Cola', amounts: { energy: 225, protein: 0, fat: 0, carbohydrates: 56, fiber: 0, sodium: 0.02 } },
 ]
 
-const balancedSingleItem: Amounts = Object.fromEntries(
+const balancedMealGuide: Amounts = Object.fromEntries(
   NUTRIENT_DEFINITIONS.map((nutrient) => [
     nutrient.key,
     perMealReferenceValue(nutrient, 'japan'),
@@ -35,26 +35,33 @@ afterEach(() => {
 })
 
 describe('nutrition scoring', () => {
-  it('uses the single-item reference for the status pills', () => {
+  it('uses meal-scale references and only flags a genuinely notable amount', () => {
     const energy = NUTRIENT_DEFINITIONS[0]!
     const singleItemReference = perMealReferenceValue(energy, 'japan')
 
-    expect(judgeGap(singleItemReference, singleItemReference)).toBe('OK')
-    expect(judgeGap(singleItemReference * 0.84, singleItemReference)).toBe('Low')
-    expect(judgeGap(singleItemReference * 1.16, singleItemReference)).toBe('High')
+    expect(singleItemReference).toBe(700)
+    expect(judgeGap(singleItemReference * 0.84, singleItemReference)).toBe('OK')
+    expect(judgeGap(singleItemReference * 1.7, singleItemReference)).toBe('OK')
+    expect(judgeGap(singleItemReference * 2.01, singleItemReference)).toBe('High')
   })
 
-  it('keeps a realistic single meal out of an all-high judgment state', () => {
-    const meal: Amounts = { energy: 300, protein: 12, fat: 10, carbohydrates: 40, fiber: 6, sodium: 0.5 }
-    const judgments = NUTRIENT_DEFINITIONS.map((nutrient) => {
-      const displayedGuide = perMealReferenceValue(nutrient, 'japan')
-      const judgment = judgeGap(meal[nutrient.key], displayedGuide)
-      return { key: nutrient.key, amount: meal[nutrient.key], displayedGuide, judgment }
-    })
+  it('treats the live 200 g tofu record as contributions, not deficiencies or protein excess', () => {
+    const tofu = foods.find(({ name }) => name === '200 g plain tofu')!.amounts
+    const proteinGuide = perMealReferenceValue(NUTRIENT_DEFINITIONS.find(({ key }) => key === 'protein')!, 'japan')
 
-    expect(judgments.every(({ judgment }) => judgment === 'High')).toBe(false)
-    for (const nutrient of judgments) {
-      if (nutrient.amount < nutrient.displayedGuide) expect(nutrient.judgment).not.toBe('High')
+    expect(contributionPercent(tofu.protein, proteinGuide)).toBe(170)
+    expect(judgeGap(tofu.protein, proteinGuide)).not.toBe('High')
+    expect(NUTRIENT_DEFINITIONS.map((nutrient) => judgeGap(tofu[nutrient.key], perMealReferenceValue(nutrient, 'japan')))).not.toContain('Low')
+  })
+
+  it('keeps real onigiri and grilled-salmon records as item contributions', () => {
+    const foodsToCheck = ['onigiri', 'grilled salmon'] as const
+
+    for (const name of foodsToCheck) {
+      const amounts = foods.find((food) => food.name === name)!.amounts
+      const outcomes = NUTRIENT_DEFINITIONS.map((nutrient) => judgeGap(amounts[nutrient.key], perMealReferenceValue(nutrient, 'japan')))
+      expect(outcomes).not.toContain('Low')
+      expect(outcomes).not.toContain('High')
     }
   })
 
@@ -62,16 +69,16 @@ describe('nutrition scoring', () => {
     const scores = foods.map(({ name, amounts }) => ({ name, score: foodScoreFor(amounts) }))
 
     expect(scores).toEqual([
-      { name: 'onigiri', score: 54 },
-      { name: 'tofu', score: 39 },
-      { name: 'grilled salmon', score: 35 },
-      { name: 'miso soup', score: 24 },
-      { name: 'Kit Kat', score: 55 },
-      { name: 'Coca-Cola', score: 26 },
+      { name: 'onigiri', score: 32 },
+      { name: '200 g plain tofu', score: 64 },
+      { name: 'grilled salmon', score: 50 },
+      { name: 'miso soup', score: 12 },
+      { name: 'Kit Kat', score: 26 },
+      { name: 'Coca-Cola', score: 14 },
     ])
     expect(new Set(scores.map(({ score }) => score)).size).toBe(scores.length)
-    expect(foodScoreFor(balancedSingleItem)).toBe(100)
-    expect(foodScoreFor(balancedSingleItem)).toBeGreaterThan(
+    expect(foodScoreFor(balancedMealGuide)).toBe(100)
+    expect(foodScoreFor(balancedMealGuide)).toBeGreaterThan(
       scores.find(({ name }) => name === 'Coca-Cola')!.score,
     )
   })
