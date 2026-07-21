@@ -1,6 +1,10 @@
 import { useReducer, useState, type FormEvent } from 'react'
 import {
   isNutritionReport,
+  judgeGap,
+  NUTRIENT_DEFINITIONS,
+  perMealReferenceValue,
+  type NutrientKey,
   type NutritionReport,
   type NutritionStandard,
 } from '../../shared/nutrition'
@@ -10,6 +14,7 @@ import { NutrientCompareScreen } from './NutrientCompareScreen'
 import { TomorrowSuggestScreen } from './TomorrowSuggestScreen'
 import { TownDeliveryScreen } from './TownDeliveryScreen'
 import { AchievementScene, type AchievementDelta } from '../screens/AchievementScene'
+import { t } from '../i18n'
 import './nutrition-flow.css'
 
 type Locale = 'en' | 'ja'
@@ -66,19 +71,73 @@ export function achievementSeenReducer(_seen: boolean, action: AchievementSeenAc
 
 const initialFlowState: NutritionFlowState = { step: 1, standard: 'japan' }
 
-// This mirrors NutritionScreen's established client request contract. It remains
-// local because the existing helper is private and this change is scoped away
-// from modifying NutritionScreen or adding a shared request module.
-async function requestNutrition(description: string, amountGrams: number): Promise<NutritionReport> {
-  const response = await fetch('/api/nutrition', {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ description, amountGrams }),
+const CLIENT_API_TIMEOUT_MS = 3_000
+const deterministicPer100g: Record<NutrientKey, number> = {
+  energy: 150,
+  protein: 6,
+  fat: 5,
+  carbohydrates: 20,
+  fiber: 3,
+  sodium: 0.25,
+}
+
+function roundAmount(value: number): number {
+  return Math.round(value * 10) / 10
+}
+
+function nutritionCredit(amount: number, perMealReference: number): number {
+  const ratio = amount / perMealReference
+  if (ratio >= 0.85 && ratio <= 1.15) return 1
+  if (ratio < 0.85) return Math.max(0, ratio / 0.85)
+  return Math.max(0, 1 - (ratio - 1.15) / (2 * 0.85))
+}
+
+/** Mirrors the Worker’s deterministic fallback values when its local proxy is unavailable. */
+export function localNutritionReport(description: string, amountGrams: number, locale: Locale): NutritionReport {
+  const nutrients = NUTRIENT_DEFINITIONS.map((definition) => {
+    const amount = roundAmount(deterministicPer100g[definition.key] * amountGrams / 100)
+    return {
+      key: definition.key,
+      amount,
+      source: 'deterministic-fallback' as const,
+      judgment: judgeGap(amount, perMealReferenceValue(definition, 'japan')),
+    }
   })
-  if (!response.ok) throw new Error(`Nutrition request failed with ${response.status}`)
-  const value: unknown = await response.json()
-  if (!isNutritionReport(value)) throw new Error('Nutrition response did not match the expected shape')
-  return value
+  const foodScore = Math.round(100 * nutrients.reduce(
+    (total, nutrient) => total + nutritionCredit(nutrient.amount, perMealReferenceValue(NUTRIENT_DEFINITIONS.find((definition) => definition.key === nutrient.key)!, 'japan')),
+    0,
+  ) / NUTRIENT_DEFINITIONS.length)
+
+  return {
+    description: description.trim(),
+    amountGrams,
+    productName: null,
+    source: 'deterministic-fallback',
+    nutrients,
+    foodScore,
+    aiAttempt: { status: 'failed', estimatedCount: 0, reason: t(locale, 'offline.nutrition') },
+  }
+}
+
+export async function requestNutritionWithFallback(description: string, amountGrams: number, locale: Locale): Promise<NutritionReport> {
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), CLIENT_API_TIMEOUT_MS)
+  try {
+    const response = await fetch('/api/nutrition', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ description, amountGrams }),
+      signal: controller.signal,
+    })
+    if (!response.ok) throw new Error(`Nutrition request failed with ${response.status}`)
+    const value: unknown = await response.json()
+    if (!isNutritionReport(value)) throw new Error('Nutrition response did not match the expected shape')
+    return value
+  } catch {
+    return localNutritionReport(description, amountGrams, locale)
+  } finally {
+    clearTimeout(timeout)
+  }
 }
 
 const flowLabels = {
@@ -136,15 +195,13 @@ export function NutritionFlow({
     setLoading(true)
     setStatus('Looking up your meal…')
     try {
-      const nextReport = await requestNutrition(meal, amountGrams)
+      const nextReport = await requestNutritionWithFallback(meal, amountGrams, locale)
       setReportBaselineFoodScore(previousFoodScore)
       setReport(nextReport)
       onReport?.(nextReport)
       dispatchAchievementSeen({ type: 'reportProduced' })
       dispatch({ type: 'reset' })
       setStatus('')
-    } catch {
-      setStatus('That report could not be prepared. Try again in a moment.')
     } finally {
       setLoading(false)
     }

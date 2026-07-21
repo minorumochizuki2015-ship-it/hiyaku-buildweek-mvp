@@ -1,6 +1,6 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it, vi } from 'vitest'
-import { AppShell, ArrivalScreen, bottomNavDestination, DispatchScreen, GoyoTabContent, JourneyScreen, LanguageToggle, JOURNEY_PRESENTATION_STATES, isJourneyScreenState, journeyPresentationFor, journeyStateAfterGoyoAccept, nutritionStateFor, shouldDismissGoyoHelp, townReturnDestination, type JourneyState, type NavTab } from './App'
+import { AppShell, ArrivalScreen, bottomNavDestination, DispatchScreen, GoyoTabContent, JourneyScreen, LanguageToggle, JOURNEY_PRESENTATION_STATES, isJourneyScreenState, journeyPresentationFor, journeyStateAfterGoyoAccept, nutritionStateFor, requestCompletionWithFallback, requestMissionWithFallback, shouldDismissGoyoHelp, townReturnDestination, type JourneyState, type NavTab } from './App'
 import { runScore, totalScore } from '../shared/activity'
 import { NutritionFlow } from './nutrition/NutritionFlow'
 import { checkpointRouteState } from './checkpointRoute'
@@ -335,6 +335,48 @@ describe('core journey render precedence', () => {
     const grownTown = renderCurrentScreen()
     expect(grownTown).toContain('class="town-home"')
     expect(grownTown).toContain('src="/assets/town/rojolive-4.png"')
+  })
+})
+
+describe('client Worker fallback', () => {
+  it('keeps a rejected mission request on the usable Journey path and discloses the local narrative', async () => {
+    const fetchMock = vi.fn().mockRejectedValue(new TypeError('Worker unavailable'))
+    vi.stubGlobal('fetch', fetchMock)
+    try {
+      const result = await requestMissionWithFallback({ availableMinutes: 10, energy: 'Steady', courierId: MIKOTO.id }, 'en')
+      const state: JourneyState = 'active'
+      const screen = renderToStaticMarkup(<JourneyScreen mission={result.value} locale="en" state={state} stats={{ elapsedSeconds: 20, progress: 50, distanceMetres: 400 }} targetDistanceMetres={800} availableMinutes={10} movementMode="demo" locationStatus="" isLocalNarrative={result.local} onPause={() => undefined} onEnd={() => undefined} />)
+
+      expect(fetchMock).toHaveBeenCalledWith('/api/mission', expect.objectContaining({ method: 'POST', signal: expect.any(AbortSignal) }))
+      expect(result.local).toBe(true)
+      expect(journeyPresentationFor(state)).toBe('journey')
+      expect(screen).toContain(result.value.title)
+      expect(screen).toContain('Offline demo — narrative generated locally')
+      expect(t('ja', 'offline.mission')).toBe('オフラインのデモ表示 — 物語は端末内で生成しています')
+      expect(screen).toContain('End Mission')
+    } finally {
+      vi.unstubAllGlobals()
+    }
+  })
+
+  it('keeps a rejected completion request on the Arrival path and discloses the local narrative', async () => {
+    const fetchMock = vi.fn().mockRejectedValue(new TypeError('Worker unavailable'))
+    vi.stubGlobal('fetch', fetchMock)
+    try {
+      const result = await requestCompletionWithFallback({ distanceMeters: 800, durationSeconds: 100, completionPercent: 100, missionTitle: mission.title, courierId: MIKOTO.id, locale: 'en' })
+      const state: JourneyState = 'completed'
+      const screen = renderToStaticMarkup(<ArrivalScreen mission={mission} completion={result.value} locale="en" stats={{ elapsedSeconds: 100, progress: 100, distanceMetres: 800 }} targetDistanceMetres={800} availableMinutes={10} isLocalNarrative={result.local} onRestart={() => undefined} onReturnToTown={() => undefined} />)
+
+      expect(fetchMock).toHaveBeenCalledWith('/api/complete', expect.objectContaining({ method: 'POST', signal: expect.any(AbortSignal) }))
+      expect(result.local).toBe(true)
+      expect(journeyPresentationFor(state)).toBe('arrival')
+      expect(screen).toContain(result.value.rank)
+      expect(screen).toContain('Offline demo — narrative generated locally')
+      expect(t('ja', 'offline.mission')).toBe('オフラインのデモ表示 — 物語は端末内で生成しています')
+      expect(screen).toContain('Return to town')
+    } finally {
+      vi.unstubAllGlobals()
+    }
   })
 })
 

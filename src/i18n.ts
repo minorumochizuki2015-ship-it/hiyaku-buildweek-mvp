@@ -15,6 +15,8 @@ type TranslationKey =
   | 'placeholder.title'
   | 'placeholder.copy'
   | 'placeholder.return'
+  | 'offline.mission'
+  | 'offline.nutrition'
 
 const UI_COPY: Record<Locale, Record<TranslationKey, string>> = {
   en: {
@@ -32,6 +34,8 @@ const UI_COPY: Record<Locale, Record<TranslationKey, string>> = {
     'placeholder.title': '{tab} is coming soon.',
     'placeholder.copy': 'This destination is reserved for a future HIKYAKU chapter. Your courier mission remains available from Dispatch.',
     'placeholder.return': 'Return to Dispatch',
+    'offline.mission': 'Offline demo — narrative generated locally',
+    'offline.nutrition': 'Offline demo — nutrition estimated locally',
   },
   ja: {
     'nav.aria': 'HIKYAKU ナビゲーション',
@@ -48,6 +52,8 @@ const UI_COPY: Record<Locale, Record<TranslationKey, string>> = {
     'placeholder.title': '{tab} は準備中です。',
     'placeholder.copy': 'この行き先は、HIKYAKU の次章のために用意されています。飛脚任務は「任務」からいつでも続けられます。',
     'placeholder.return': '任務へ戻る',
+    'offline.mission': 'オフラインのデモ表示 — 物語は端末内で生成しています',
+    'offline.nutrition': 'オフラインのデモ表示 — 栄養値は端末内で推定しています',
   },
 }
 

@@ -1,10 +1,14 @@
-import { describe, expect, it } from 'vitest'
+import { renderToStaticMarkup } from 'react-dom/server'
+import { describe, expect, it, vi } from 'vitest'
 import type { NutritionReport } from '../../shared/nutrition'
+import { GozenLedgerScreen } from './GozenLedgerScreen'
 import {
   achievementModeFor,
   achievementSeenReducer,
   foodHallDeltasForReport,
+  localNutritionReport,
   nutritionFlowReducer,
+  requestNutritionWithFallback,
 } from './NutritionFlow'
 
 const report: NutritionReport = {
@@ -73,5 +77,32 @@ describe('NutritionFlow', () => {
   it('reports only the model-derived food-hall change from the submitted report', () => {
     expect(foodHallDeltasForReport(report, 0, 'en')).toEqual([{ key: 'food-hall-energy', label: 'Food hall', delta: '+62' }])
     expect(foodHallDeltasForReport(report, 62, 'ja')).toEqual([])
+  })
+
+  it('uses the Worker-equivalent deterministic report when the nutrition request fails', async () => {
+    const fetchMock = vi.fn().mockRejectedValue(new TypeError('Worker unavailable'))
+    vi.stubGlobal('fetch', fetchMock)
+    try {
+      const fallback = localNutritionReport('onigiri', 200, 'en')
+      const report = await requestNutritionWithFallback('onigiri', 200, 'en')
+      const screen = renderToStaticMarkup(<GozenLedgerScreen report={report} locale="en" />)
+
+      expect(fetchMock).toHaveBeenCalledWith('/api/nutrition', expect.objectContaining({ method: 'POST', signal: expect.any(AbortSignal) }))
+      expect(report).toEqual(fallback)
+      expect(report.source).toBe('deterministic-fallback')
+      expect(report.nutrients).toEqual([
+        { key: 'energy', amount: 300, source: 'deterministic-fallback', judgment: 'Low' },
+        { key: 'protein', amount: 12, source: 'deterministic-fallback', judgment: 'OK' },
+        { key: 'fat', amount: 10, source: 'deterministic-fallback', judgment: 'OK' },
+        { key: 'carbohydrates', amount: 40, source: 'deterministic-fallback', judgment: 'OK' },
+        { key: 'fiber', amount: 6, source: 'deterministic-fallback', judgment: 'High' },
+        { key: 'sodium', amount: 0.5, source: 'deterministic-fallback', judgment: 'OK' },
+      ])
+      expect(report.foodScore).toBe(95)
+      expect(screen).toContain('Offline demo — nutrition estimated locally')
+      expect(localNutritionReport('onigiri', 200, 'ja').aiAttempt).toEqual({ status: 'failed', estimatedCount: 0, reason: 'オフラインのデモ表示 — 栄養値は端末内で推定しています' })
+    } finally {
+      vi.unstubAllGlobals()
+    }
   })
 })

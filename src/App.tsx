@@ -2,6 +2,8 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import {
   isMission,
   isMissionCompletion,
+  mockCompleteMission,
+  mockGenerateMission,
   type AvailableMinutes,
   type CompletionRequest,
   type Energy,
@@ -209,16 +211,46 @@ export function FlagsTabContent({ courierFlagPower, locale, onWalk }: {
   return <FlagGroundScreen courierFlagPower={courierFlagPower} locale={locale} onWalk={onWalk} />
 }
 
+const CLIENT_API_TIMEOUT_MS = 3_000
+
+export interface ApiResult<T> {
+  value: T
+  local: boolean
+}
+
 async function postApi<T>(path: string, body: MissionRequest | CompletionRequest, validate: (value: unknown) => value is T): Promise<T> {
-  const response = await fetch(path, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify(body),
-  })
-  if (!response.ok) throw new Error(`API request failed with ${response.status}`)
-  const value: unknown = await response.json()
-  if (!validate(value)) throw new Error('API response did not match the expected shape')
-  return value
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), CLIENT_API_TIMEOUT_MS)
+  try {
+    const response = await fetch(path, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    })
+    if (!response.ok) throw new Error(`API request failed with ${response.status}`)
+    const value: unknown = await response.json()
+    if (!validate(value)) throw new Error('API response did not match the expected shape')
+    return value
+  } finally {
+    clearTimeout(timeout)
+  }
+}
+
+export async function requestMissionWithFallback(input: MissionInput, locale: Locale): Promise<ApiResult<Mission>> {
+  try {
+    return { value: await postApi('/api/mission', { ...input, locale }, isMission), local: false }
+  } catch {
+    return { value: mockGenerateMission(input, locale), local: true }
+  }
+}
+
+export async function requestCompletionWithFallback(summary: CompletionRequest): Promise<ApiResult<MissionCompletion>> {
+  try {
+    return { value: await postApi('/api/complete', summary, isMissionCompletion), local: false }
+  } catch {
+    return { value: mockCompleteMission(summary, summary.locale), local: true }
+  }
 }
 
 function formatDuration(seconds: number): string {
@@ -416,7 +448,7 @@ export function GoyoTabContent({ duty, checkpoints, goals, townEffects, mikotoQu
   )
 }
 
-export function JourneyScreen({ mission, locale, state, stats, targetDistanceMetres, availableMinutes, movementMode, locationStatus, onPause, onEnd }: {
+export function JourneyScreen({ mission, locale, state, stats, targetDistanceMetres, availableMinutes, movementMode, locationStatus, isLocalNarrative = false, onPause, onEnd }: {
   mission: Mission
   locale: Locale
   state: JourneyScreenState
@@ -425,6 +457,7 @@ export function JourneyScreen({ mission, locale, state, stats, targetDistanceMet
   availableMinutes: AvailableMinutes
   movementMode: MovementMode
   locationStatus: string
+  isLocalNarrative?: boolean
   onPause: () => void
   onEnd: () => void
 }) {
@@ -442,6 +475,7 @@ export function JourneyScreen({ mission, locale, state, stats, targetDistanceMet
           <p className="eyebrow">{progressLabel}</p>
           <h1 id="journey-title">{mission.title}</h1>
           <p className="courier-leading">{locale === 'en' ? 'Lead courier' : '率いる飛脚'}: {courier.gameName} — {courier.title}</p>
+          {isLocalNarrative && <p className="offline-demo-notice" role="status">{t(locale, 'offline.mission')}</p>}
         </div>
         <span className="demo-badge">{movementMode === 'walk' ? 'REAL WALK' : 'JUDGE DEMO'}</span>
       </header>
@@ -510,13 +544,14 @@ export function ArrivalActions({ onRestart, onReturnToTown, onShare }: { onResta
   )
 }
 
-export function ArrivalScreen({ mission, completion, locale, stats, targetDistanceMetres, availableMinutes, onRestart, onReturnToTown, onNutrition }: {
+export function ArrivalScreen({ mission, completion, locale, stats, targetDistanceMetres, availableMinutes, isLocalNarrative = false, onRestart, onReturnToTown, onNutrition }: {
   mission: Mission
   completion: MissionCompletion
   locale: Locale
   stats: JourneyStats
   targetDistanceMetres: number
   availableMinutes: AvailableMinutes
+  isLocalNarrative?: boolean
   onRestart: () => void
   onReturnToTown: () => void
   onNutrition?: () => void
@@ -588,6 +623,7 @@ export function ArrivalScreen({ mission, completion, locale, stats, targetDistan
       </section>
       <ArrivalSeal data={sealData} />
       <section className="epilogue">
+        {isLocalNarrative && <p className="offline-demo-notice" role="status">{t(locale, 'offline.mission')}</p>}
         <p>{completion.epilogue}</p>
         <p className="rival-arrival-summary">{arrivalRivalSummary(stats.distanceMetres, rivalDistance)}</p>
         <p className="historical-note"><strong>{courier.gameName}:</strong> {courier.missionCompleteQuote}</p>
@@ -620,8 +656,10 @@ export default function App() {
   const [selectedTab, setSelectedTab] = useState<NavTab>('dispatch')
   const [locale, setLocale] = useState<Locale>('en')
   const [mission, setMission] = useState<Mission | null>(null)
+  const [missionUsedLocalFallback, setMissionUsedLocalFallback] = useState(false)
   const [stats, setStats] = useState<JourneyStats>({ elapsedSeconds: 0, progress: 0, distanceMetres: 0 })
   const [completion, setCompletion] = useState<MissionCompletion | null>(null)
+  const [completionUsedLocalFallback, setCompletionUsedLocalFallback] = useState(false)
   const [latestNutritionReport, setLatestNutritionReport] = useState<NutritionReport | null>(null)
   const [sessionRuns, setSessionRuns] = useState<RecordBookRun[]>([])
   const [sessionMeals, setSessionMeals] = useState<NutritionReport[]>([])
@@ -700,22 +738,19 @@ export default function App() {
       courierId: mission.courierId,
       locale: mission.locale,
     }
-    void postApi('/api/complete', summary, isMissionCompletion)
+    void requestCompletionWithFallback(summary)
       .then((result) => {
         if (cancelled) return
-        setCompletion(result)
+        setCompletion(result.value)
+        setCompletionUsedLocalFallback(result.local)
         setSessionRuns((runs) => [...runs, {
           title: mission.title,
           distanceMetres: stats.distanceMetres,
           durationSeconds: stats.elapsedSeconds,
-          rank: result.rank,
+          rank: result.value.rank,
         }])
         setMissionCompletedThisSession(true)
         setState('completed')
-      })
-      .catch(() => {
-        if (cancelled) return
-        setState('idle')
       })
     return () => { cancelled = true }
   }, [state, mission, stats.distanceMetres, stats.elapsedSeconds, targetDistanceMetres])
@@ -736,21 +771,19 @@ export default function App() {
 
   const generateMission = async (input: MissionInput, selectedMovementMode: MovementMode) => {
     setState('generating')
-    try {
-      const generatedMission = await postApi('/api/mission', { ...input, locale }, isMission)
-      setMission(generatedMission)
-      distanceMetresRef.current = 0
-      setStats({ elapsedSeconds: 0, progress: 0, distanceMetres: 0 })
-      setCompletion(null)
-      setTargetDistanceMetres(distanceTargetMetres(input.availableMinutes, input.energy))
-      setAvailableMinutes(input.availableMinutes)
-      setMovementMode(selectedMovementMode)
-      setLocationStatus('')
-      setSelectedTab('dispatch')
-      setState('idle')
-    } catch {
-      setState('idle')
-    }
+    const generated = await requestMissionWithFallback(input, locale)
+    setMission(generated.value)
+    setMissionUsedLocalFallback(generated.local)
+    distanceMetresRef.current = 0
+    setStats({ elapsedSeconds: 0, progress: 0, distanceMetres: 0 })
+    setCompletion(null)
+    setCompletionUsedLocalFallback(false)
+    setTargetDistanceMetres(distanceTargetMetres(input.availableMinutes, input.energy))
+    setAvailableMinutes(input.availableMinutes)
+    setMovementMode(selectedMovementMode)
+    setLocationStatus('')
+    setSelectedTab('dispatch')
+    setState('idle')
   }
 
   const recordMeal = (report: NutritionReport) => {
@@ -840,13 +873,13 @@ export default function App() {
   } else if (journeyPresentation === 'nutrition-before-journey') {
     content = <NutritionFlow onBack={() => setState('idle')} backLabel="Dispatch" onContinue={() => setState('ready')} locale={locale} distanceMetres={undefined} elapsedSeconds={undefined} previousFoodScore={latestNutritionReport?.foodScore ?? 0} onReport={recordMeal} />
   } else if (journeyPresentation === 'journey' && isJourneyScreenState(state) && activeMission) {
-    content = <JourneyScreen mission={activeMission} locale={locale} state={state} stats={stats} targetDistanceMetres={targetDistanceMetres ?? 0} availableMinutes={availableMinutes} movementMode={movementMode} locationStatus={locationStatus} onPause={() => setState((current) => current === 'paused' ? 'active' : 'paused')} onEnd={() => {
+    content = <JourneyScreen mission={activeMission} locale={locale} state={state} stats={stats} targetDistanceMetres={targetDistanceMetres ?? 0} availableMinutes={availableMinutes} movementMode={movementMode} locationStatus={locationStatus} isLocalNarrative={missionUsedLocalFallback} onPause={() => setState((current) => current === 'paused' ? 'active' : 'paused')} onEnd={() => {
       distanceMetresRef.current = targetDistanceMetres ?? 0
       setStats((current) => ({ ...current, progress: 100, distanceMetres: targetDistanceMetres ?? current.distanceMetres }))
       setState('completing')
     }} />
   } else if (journeyPresentation === 'arrival' && activeMission && completion) {
-    content = <ArrivalScreen mission={activeMission} completion={completion} locale={locale} stats={stats} targetDistanceMetres={targetDistanceMetres ?? 0} availableMinutes={availableMinutes} onRestart={() => {
+    content = <ArrivalScreen mission={activeMission} completion={completion} locale={locale} stats={stats} targetDistanceMetres={targetDistanceMetres ?? 0} availableMinutes={availableMinutes} isLocalNarrative={missionUsedLocalFallback || completionUsedLocalFallback} onRestart={() => {
       setSelectedTab('dispatch')
       setState('idle')
     }} onReturnToTown={returnToTown} onNutrition={() => setState('nutrition')} />
