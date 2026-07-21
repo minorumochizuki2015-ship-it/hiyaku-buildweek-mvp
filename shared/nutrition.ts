@@ -2,6 +2,15 @@ export type NutrientKey = 'energy' | 'protein' | 'fat' | 'carbohydrates' | 'fibe
 export type NutrientSource = 'open-food-facts' | 'gpt-5.6-sol' | 'deterministic-fallback'
 export type NutritionSource = NutrientSource | 'hybrid'
 export type GapJudgment = 'Low' | 'OK' | 'High'
+export const NUTRITION_STANDARDS = ['japan', 'fda', 'eu', 'international'] as const
+export type NutritionStandard = typeof NUTRITION_STANDARDS[number]
+
+export const NUTRITION_STANDARD_LABELS: Record<NutritionStandard, string> = {
+  japan: 'Japan',
+  fda: 'FDA',
+  eu: 'EU',
+  international: 'International',
+}
 
 export interface NutrientDefinition {
   key: NutrientKey
@@ -9,18 +18,21 @@ export interface NutrientDefinition {
   edoLabel: string
   offField: string
   unit: 'kcal' | 'g'
+  // Retained for the Worker’s established Japanese baseline.
   referenceValue: number
+  // Single-meal comparison references for the client-side standard selector.
+  referenceValues: Record<NutritionStandard, number>
 }
 
 // A single adult meal baseline, derived from the Japanese daily framing over three meals.
 export const NUTRIENT_DEFINITIONS: readonly NutrientDefinition[] = [
-  { key: 'energy', label: 'Energy', edoLabel: '力飯値', offField: 'energy-kcal_100g', unit: 'kcal', referenceValue: 700 },
-  { key: 'protein', label: 'Protein', edoLabel: '御力札', offField: 'proteins_100g', unit: 'g', referenceValue: 20 },
-  { key: 'fat', label: 'Fat', edoLabel: '油分札', offField: 'fat_100g', unit: 'g', referenceValue: 18 },
-  { key: 'carbohydrates', label: 'Carbs', edoLabel: '糖質札', offField: 'carbohydrates_100g', unit: 'g', referenceValue: 70 },
-  { key: 'fiber', label: 'Fiber', edoLabel: '整え札', offField: 'fiber_100g', unit: 'g', referenceValue: 7 },
-  // Open Food Facts reports sodium in grams, so 0.8g sodium is displayed (about 2.0g salt equivalent).
-  { key: 'sodium', label: 'Sodium', edoLabel: '微量札', offField: 'sodium_100g', unit: 'g', referenceValue: 0.8 },
+  { key: 'energy', label: 'Energy', edoLabel: '力飯値', offField: 'energy-kcal_100g', unit: 'kcal', referenceValue: 700, referenceValues: { japan: 700, fda: 666.7, eu: 666.7, international: 666.7 } },
+  { key: 'protein', label: 'Protein', edoLabel: '御力札', offField: 'proteins_100g', unit: 'g', referenceValue: 20, referenceValues: { japan: 20, fda: 16.7, eu: 16.7, international: 16.7 } },
+  { key: 'fat', label: 'Fat', edoLabel: '油分札', offField: 'fat_100g', unit: 'g', referenceValue: 18, referenceValues: { japan: 18, fda: 26, eu: 23.3, international: 22.2 } },
+  { key: 'carbohydrates', label: 'Carbs', edoLabel: '糖質札', offField: 'carbohydrates_100g', unit: 'g', referenceValue: 70, referenceValues: { japan: 70, fda: 91.7, eu: 86.7, international: 83.3 } },
+  { key: 'fiber', label: 'Fiber', edoLabel: '整え札', offField: 'fiber_100g', unit: 'g', referenceValue: 7, referenceValues: { japan: 7, fda: 9.3, eu: 8.3, international: 8.3 } },
+  // The Worker currently tracks sodium only. “Micros” is an honest display-level proxy, not a full micronutrient estimate.
+  { key: 'sodium', label: 'Micros', edoLabel: '微量札', offField: 'sodium_100g', unit: 'g', referenceValue: 0.8, referenceValues: { japan: 0.8, fda: 0.8, eu: 0.8, international: 0.7 } },
 ] as const
 
 export interface NutritionRequest {

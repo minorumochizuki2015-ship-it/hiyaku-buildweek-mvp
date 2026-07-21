@@ -15,7 +15,11 @@ import { checkpointRouteState } from './checkpointRoute'
 import { ArrivalSeal, buildSealSummary, formatSealDate, sealCanvasDataUrl, type ArrivalSealData } from './ArrivalSeal'
 import { NutritionScreen } from './NutritionScreen'
 
-type JourneyState = 'idle' | 'generating' | 'ready' | 'active' | 'paused' | 'completing' | 'completed' | 'nutrition'
+type JourneyState = 'idle' | 'generating' | 'nutrition-before-journey' | 'ready' | 'active' | 'paused' | 'completing' | 'completed' | 'nutrition'
+
+export function nutritionStateFor(entry: 'dispatch' | 'arrival'): Extract<JourneyState, 'nutrition-before-journey' | 'nutrition'> {
+  return entry === 'dispatch' ? 'nutrition-before-journey' : 'nutrition'
+}
 
 interface JourneyStats {
   elapsedSeconds: number
@@ -486,13 +490,14 @@ export default function App() {
       setAvailableMinutes(input.availableMinutes)
       setMovementMode(selectedMovementMode)
       setLocationStatus('')
-      setState('ready')
+      setState(nutritionStateFor('dispatch'))
     } catch {
       setState('idle')
     }
   }
 
   if (state === 'idle' || state === 'generating') return <DispatchScreen onGenerate={generateMission} generating={state === 'generating'} />
+  if (state === 'nutrition-before-journey') return <NutritionScreen onBack={() => setState('idle')} backLabel="Dispatch" onContinue={() => setState('ready')} />
   if ((state === 'ready' || state === 'active' || state === 'paused' || state === 'completing') && activeMission) {
     return <JourneyScreen mission={activeMission} state={state} stats={stats} targetDistanceMetres={targetDistanceMetres ?? 0} availableMinutes={availableMinutes} movementMode={movementMode} locationStatus={locationStatus} onPause={() => setState((current) => current === 'paused' ? 'active' : 'paused')} onEnd={() => {
       distanceMetresRef.current = targetDistanceMetres ?? 0
@@ -500,7 +505,7 @@ export default function App() {
       setState('completing')
     }} />
   }
-  if (state === 'completed' && activeMission && completion) return <ArrivalScreen mission={activeMission} completion={completion} stats={stats} targetDistanceMetres={targetDistanceMetres ?? 0} availableMinutes={availableMinutes} onRestart={() => setState('idle')} onNutrition={() => setState('nutrition')} />
+  if (state === 'completed' && activeMission && completion) return <ArrivalScreen mission={activeMission} completion={completion} stats={stats} targetDistanceMetres={targetDistanceMetres ?? 0} availableMinutes={availableMinutes} onRestart={() => setState('idle')} onNutrition={() => setState(nutritionStateFor('arrival'))} />
   if (state === 'nutrition') return <NutritionScreen onBack={() => setState('completed')} />
   return <DispatchScreen onGenerate={generateMission} generating={false} />
 }
