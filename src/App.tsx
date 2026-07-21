@@ -13,7 +13,7 @@ import {
 import { MIKOTO, courierCopy } from '../shared/couriers'
 import { calculateActivityScores, runScore, toGameResources, totalScore } from '../shared/activity'
 import { distanceTargetMetres, rivalDistanceAtElapsedSeconds, type MovementMode, startWalkTracking } from './movement'
-import { checkpointRouteState } from './checkpointRoute'
+import { checkpointEndpoints, checkpointRouteState } from './checkpointRoute'
 import { ArrivalSeal, buildSealSummary, formatSealDate, sealCanvasDataUrl, type ArrivalSealData } from './ArrivalSeal'
 import { NutritionFlow } from './nutrition/NutritionFlow'
 import { TownHomeScreen, type TownHomeGoal, type TownHomeParameter } from './screens/TownHomeScreen'
@@ -231,7 +231,7 @@ function arrivalRivalSummary(playerDistanceMetres: number, rivalDistanceMetres: 
     : `Yuzu, the simulated AI pacer, finished ${gapMetres}m ahead of you.`
 }
 
-export function CheckpointRoute({ progress, targetDistanceMetres }: { progress: number; targetDistanceMetres: number }) {
+export function CheckpointRoute({ progress, targetDistanceMetres, locale }: { progress: number; targetDistanceMetres: number; locale: Locale }) {
   const route = checkpointRouteState(progress, targetDistanceMetres)
 
   return (
@@ -240,22 +240,22 @@ export function CheckpointRoute({ progress, targetDistanceMetres }: { progress: 
       <ol className="checkpoint-stops">
         <li className="checkpoint-stop completed checkpoint-start">
           <span className="checkpoint-node" aria-hidden="true">●</span>
-          <span className="checkpoint-name">出立</span>
+          <span className="checkpoint-name">{checkpointEndpoints.departure[locale]}</span>
         </li>
         {route.waypoints.map((waypoint) => (
-          <li className={`checkpoint-stop ${waypoint.state}`} key={waypoint.name} aria-current={waypoint.state === 'current' ? 'step' : undefined}>
+          <li className={`checkpoint-stop ${waypoint.state}`} key={waypoint.name.ja} aria-current={waypoint.state === 'current' ? 'step' : undefined}>
             <span className="checkpoint-node" aria-hidden="true">{waypoint.state === 'current' ? '⚑' : '●'}</span>
-            <span className="checkpoint-name">{waypoint.name}</span>
+            <span className="checkpoint-name">{waypoint.name[locale]}</span>
           </li>
         ))}
         <li className={`checkpoint-stop finish ${progress >= 100 ? 'completed' : ''}`}>
           <span className="checkpoint-node" aria-hidden="true">✦</span>
-          <span className="checkpoint-name">到着</span>
+          <span className="checkpoint-name">{checkpointEndpoints.arrival[locale]}</span>
         </li>
       </ol>
       <p className="checkpoint-next" aria-live="polite">
         {route.nextCheckpoint
-          ? <>Next: <strong>{route.nextCheckpoint.name}</strong> — {route.nextCheckpoint.distanceRemainingMetres}m</>
+          ? <>Next: <strong>{route.nextCheckpoint.name[locale]}</strong> — {route.nextCheckpoint.distanceRemainingMetres}m</>
           : <>Final stretch — the destination awaits.</>}
       </p>
     </section>
@@ -451,7 +451,7 @@ export function JourneyScreen({ mission, locale, state, stats, targetDistanceMet
         </div>
       </section>
 
-      <CheckpointRoute progress={stats.progress} targetDistanceMetres={targetDistanceMetres} />
+      <CheckpointRoute progress={stats.progress} targetDistanceMetres={targetDistanceMetres} locale={locale} />
 
       <section className="mission-message" aria-live="polite">
         <p>{milestoneFor(stats.progress, mission)}</p>
@@ -563,9 +563,9 @@ export function ArrivalScreen({ mission, completion, locale, stats, targetDistan
         <p className="next-mission">Next dispatch: {completion.nextMissionTeaser}</p>
       </section>
       <button className="meal-button" type="button" onClick={() => setMealOpen(true)}>
-        <span aria-hidden="true">✦</span> 今日の一食 <small>Watch the courier's reward</small>
+        <span aria-hidden="true">✦</span> {t(locale, 'arrival.todayMeal')} <small>Watch the courier's reward</small>
       </button>
-      {onNutrition && <button className="nutrition-link" type="button" onClick={onNutrition}>食の帳簿 <small>View nutrition report</small></button>}
+      {onNutrition && <button className="nutrition-link" type="button" onClick={onNutrition}>{t(locale, 'arrival.couriersTable')} <small>View nutrition report</small></button>}
       <div className="arrival-actions">
         <button className="secondary-button" type="button" onClick={share}>Share Seal</button>
         <button className="primary-button compact" type="button" onClick={onRestart}>Start Another Mission</button>
@@ -576,7 +576,7 @@ export function ArrivalScreen({ mission, completion, locale, stats, targetDistan
           <section className="meal-modal" role="dialog" aria-modal="true" aria-labelledby="meal-title" onClick={(event) => event.stopPropagation()}>
             <button className="modal-close" type="button" aria-label="Close meal video" onClick={() => setMealOpen(false)}>×</button>
             <p className="eyebrow">COURIER'S REWARD</p>
-            <h2 id="meal-title">今日の一食</h2>
+            <h2 id="meal-title">{t(locale, 'arrival.todayMeal')}</h2>
             <video autoPlay muted playsInline controls preload="none">
               <source src="/assets/meal-reward-kanto.mp4" type="video/mp4" />
             </video>
@@ -758,8 +758,8 @@ export default function App() {
     : null
   const route = checkpointRouteState(stats.progress, targetDistanceMetres ?? 0)
   const goyoCheckpoints: GoyoCheckpoint[] = route.waypoints.map((checkpoint) => ({
-    name: { en: checkpoint.name, ja: checkpoint.name },
-    isNext: route.nextCheckpoint?.name === checkpoint.name,
+    name: checkpoint.name,
+    isNext: route.nextCheckpoint?.name.ja === checkpoint.name.ja,
   }))
   const goyoGoals: GoyoGoal[] = goals.map((goal) => ({
     icon: goal.key === 'carry-goyo' ? '📜' : '🍚',

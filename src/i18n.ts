@@ -9,6 +9,8 @@ type TranslationKey =
   | 'nav.records'
   | 'nav.goyoHelp.aria'
   | 'nav.goyoHelp.copy'
+  | 'arrival.todayMeal'
+  | 'arrival.couriersTable'
   | 'placeholder.eyebrow'
   | 'placeholder.title'
   | 'placeholder.copy'
@@ -24,6 +26,8 @@ const UI_COPY: Record<Locale, Record<TranslationKey, string>> = {
     'nav.records': 'Records',
     'nav.goyoHelp.aria': 'Explain Goyo',
     'nav.goyoHelp.copy': 'Goyo — today\'s courier duty from the Nihonbashi headquarters.',
+    'arrival.todayMeal': "Today's meal",
+    'arrival.couriersTable': "Courier's table",
     'placeholder.eyebrow': 'HIKYAKU LEDGER',
     'placeholder.title': '{tab} is coming soon.',
     'placeholder.copy': 'This destination is reserved for a future HIKYAKU chapter. Your courier mission remains available from Dispatch.',
@@ -38,6 +42,8 @@ const UI_COPY: Record<Locale, Record<TranslationKey, string>> = {
     'nav.records': '記録帳',
     'nav.goyoHelp.aria': '御用の説明を表示',
     'nav.goyoHelp.copy': '御用 — 日本橋本陣から届く、本日のつとめ。',
+    'arrival.todayMeal': '今日の一食',
+    'arrival.couriersTable': '食の帳簿',
     'placeholder.eyebrow': 'HIKYAKU 帳簿',
     'placeholder.title': '{tab} は準備中です。',
     'placeholder.copy': 'この行き先は、HIKYAKU の次章のために用意されています。飛脚任務は「任務」からいつでも続けられます。',

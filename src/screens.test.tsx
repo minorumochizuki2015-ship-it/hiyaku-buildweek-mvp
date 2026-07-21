@@ -14,6 +14,13 @@ import { WorkoutEntryScreen } from './screens/WorkoutEntryScreen'
 import { GoyoDetailScreen } from './screens/GoyoDetailScreen'
 
 const mission = mockGenerateMission({ availableMinutes: 10, energy: 'Steady', courierId: MIKOTO.id, displayName: 'Ada' }, 'en')
+const CJK_RUN = /[\u3040-\u30ff\u3400-\u9fff\uf900-\ufaff]+/gu
+const ENGLISH_CJK_ALLOWLIST = new Set(['日本語', '飛', '御'])
+
+function expectOnlyAllowedEnglishCjk(rendered: string): void {
+  const cjkRuns = translateText(rendered, 'en').match(CJK_RUN) ?? []
+  expect(cjkRuns.filter((run) => !ENGLISH_CJK_ALLOWLIST.has(run))).toEqual([])
+}
 
 describe('HIKYAKU static screens', () => {
   it('renders the implemented Town, Workout, and Goyo tab screens rather than the coming-soon screen', () => {
@@ -89,6 +96,7 @@ describe('HIKYAKU static screens', () => {
     expect(screen).toContain('Judge Demo')
     expect(screen).toContain('JUDGE DEMO')
     expect(screen).toContain('50% along the route')
+    for (const checkpoint of ['Depart', 'Nihonbashi', 'Ryogoku Bridge', 'Sensoji', 'Komagatado', 'Arrive']) expect(screen).toContain(checkpoint)
     expect(screen).toContain('AI PACER · SIMULATED')
     expect(screen).toContain('Yuzu')
     expect(screen).toContain(`Lead courier: ${MIKOTO.gameNameEn} — ${MIKOTO.titleEn}`)
@@ -101,7 +109,7 @@ describe('HIKYAKU static screens', () => {
     expect(screen).toContain('Start Another Mission')
     expect(screen).toContain(completion.rank)
     expect(screen).toContain('/assets/arrival-honjin-goze.mp4')
-    expect(screen).toContain('今日の一食')
+    expect(screen).toContain('Today&#x27;s meal')
     expect(screen).toContain('simulated AI pacer')
     expect(screen).toContain('HIKYAKU · ARRIVAL SEAL')
     expect(screen).toContain('Share Seal')
@@ -116,8 +124,34 @@ describe('HIKYAKU static screens', () => {
     const screen = renderToStaticMarkup(<ArrivalScreen mission={mission} completion={completion} locale="en" stats={{ elapsedSeconds: 100, progress: 100, distanceMetres: 480 }} targetDistanceMetres={480} availableMinutes={10} onRestart={() => undefined} onNutrition={() => undefined} />)
 
     expect(nutritionStateFor('arrival')).toBe('nutrition')
-    expect(screen).toContain('食の帳簿')
+    expect(screen).toContain('Courier&#x27;s table')
     expect(screen).toContain('View nutrition report')
+  })
+
+  it('renders English Journey and Arrival pages without CJK outside the explicit allowlist', () => {
+    const completion = mockCompleteMission({ distanceMeters: 480, durationSeconds: 100, completionPercent: 100, missionTitle: mission.title, courierId: mission.courierId }, 'en')
+    const shellProps = {
+      locale: 'en' as const,
+      onLocaleToggle: () => undefined,
+      selectedTab: 'dispatch' as const,
+      missionInProgress: false,
+      onTabSelect: () => undefined,
+    }
+    const screens = [
+      renderToStaticMarkup(
+        <AppShell {...shellProps}>
+          <JourneyScreen mission={mission} locale="en" state="active" stats={{ elapsedSeconds: 20, progress: 50, distanceMetres: 400 }} targetDistanceMetres={800} availableMinutes={10} movementMode="demo" locationStatus="" onPause={() => undefined} onEnd={() => undefined} />
+        </AppShell>,
+      ),
+      renderToStaticMarkup(
+        <AppShell {...shellProps}>
+          <ArrivalScreen mission={mission} completion={completion} locale="en" stats={{ elapsedSeconds: 100, progress: 100, distanceMetres: 480 }} targetDistanceMetres={480} availableMinutes={10} onRestart={() => undefined} onNutrition={() => undefined} />
+        </AppShell>,
+      ),
+    ]
+
+    // AppShell applies this same translation to its rendered content after mount.
+    for (const screen of screens) expectOnlyAllowedEnglishCjk(screen)
   })
 })
 
@@ -463,7 +497,7 @@ describe('checkpoint route', () => {
     const route = checkpointRouteState(45, 800)
 
     expect(route.waypoints.map((waypoint) => waypoint.state)).toEqual(['completed', 'completed', 'current', 'upcoming'])
-    expect(route.nextCheckpoint).toMatchObject({ name: '浅草寺', distanceRemainingMetres: 120 })
+    expect(route.nextCheckpoint).toMatchObject({ name: { en: 'Sensoji', ja: '浅草寺' }, distanceRemainingMetres: 120 })
   })
 
   it('shows the final stretch only after every named checkpoint has been passed', () => {
