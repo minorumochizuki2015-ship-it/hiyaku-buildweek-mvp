@@ -5,8 +5,10 @@ import { checkpointRouteState } from './checkpointRoute'
 import { distanceTargetMetres, haversineDistanceMetres, rivalDistanceAtElapsedSeconds, rivalPaceMultiplier, startWalkTracking } from './movement'
 import { buildSealSummary, formatSealDate, sealCanvasDataUrl } from './ArrivalSeal'
 import { mockCompleteMission, mockGenerateMission } from '../shared/mockMission'
+import { COURIERS, getCourier } from '../shared/couriers'
+import worker from '../worker/index'
 
-const mission = mockGenerateMission({ availableMinutes: 10, energy: 'Steady', displayName: 'Ada' })
+const mission = mockGenerateMission({ availableMinutes: 10, energy: 'Steady', courierId: 'tadataka', displayName: 'Ada' })
 
 describe('HIYAKU static screens', () => {
   it('renders Dispatch and its primary action', () => {
@@ -19,6 +21,10 @@ describe('HIYAKU static screens', () => {
     expect(screen).toContain('Judge Demo simulates the walk so you can complete a full mission without moving.')
     expect(screen).toContain('Real Walk: your location stays on your device.')
     expect(screen).toContain('/assets/courier-kanto-card.png')
+    expect(screen).toContain('Choose your courier')
+    expect(screen).toContain('星図ノ測姫・忠敬')
+    expect(screen).toContain('武蔵剛ノ槍姫・重忠')
+    expect(screen).toContain('Empowered by rest, hydration, and steady walks')
   })
 
   it('renders Journey and its primary action', () => {
@@ -29,10 +35,12 @@ describe('HIYAKU static screens', () => {
     expect(screen).toContain('50% along the route')
     expect(screen).toContain('AI PACER · SIMULATED')
     expect(screen).toContain('Yuzu')
+    expect(screen).toContain('率いる飛脚: 星図ノ測姫・忠敬')
+    expect(screen).toContain('Your rest, hydration, and steady walks strengthens 星図ノ測姫・忠敬.')
   })
 
   it('renders Arrival and its primary action', () => {
-    const completion = mockCompleteMission({ distanceMeters: 480, durationSeconds: 100, completionPercent: 100, missionTitle: mission.title })
+    const completion = mockCompleteMission({ distanceMeters: 480, durationSeconds: 100, completionPercent: 100, missionTitle: mission.title, courierId: mission.courierId })
     const screen = renderToStaticMarkup(<ArrivalScreen mission={mission} completion={completion} stats={{ elapsedSeconds: 100, progress: 100, distanceMetres: 480 }} targetDistanceMetres={480} availableMinutes={10} onRestart={() => undefined} />)
     expect(screen).toContain('Start Another Mission')
     expect(screen).toContain(completion.rank)
@@ -41,6 +49,8 @@ describe('HIYAKU static screens', () => {
     expect(screen).toContain('simulated AI pacer')
     expect(screen).toContain('HIYAKU · ARRIVAL SEAL')
     expect(screen).toContain('Share Seal')
+    expect(screen).toContain('carried for Ino Tadataka')
+    expect(screen).toContain('測道星輪紋')
     expect(screen).not.toContain('meal-reward-kanto.mp4')
   })
 })
@@ -76,10 +86,12 @@ describe('arrival seal serialization', () => {
     Object.defineProperty(globalThis, 'document', { configurable: true, value: { createElement: vi.fn(() => canvas) } })
 
     try {
-      const image = sealCanvasDataUrl({ missionTitle: 'Courier', rank: 'Swift Courier', distance: '800m', duration: '10:00', completion: '100%', date: 'EDO · 2026.07.21' })
+      const image = sealCanvasDataUrl({ missionTitle: 'Courier', rank: 'Swift Courier', distance: '800m', duration: '10:00', completion: '100%', date: 'EDO · 2026.07.21', courierGameName: '星図ノ測姫・忠敬', courierFigureEn: 'Ino Tadataka', crestName: '測道星輪紋' })
       expect(image).toMatch(/^data:image\/png;base64,/)
       expect(canvas.getContext).toHaveBeenCalledWith('2d')
       expect(canvas.toDataURL).toHaveBeenCalledWith('image/png')
+      expect(context.fillText).toHaveBeenCalledWith('星図ノ測姫・忠敬', 540, 221)
+      expect(context.fillText).toHaveBeenCalledWith('CARRIED FOR Ino Tadataka', 540, 249)
     } finally {
       if (originalDocument) Object.defineProperty(globalThis, 'document', originalDocument)
       else delete (globalThis as { document?: Document }).document
@@ -94,11 +106,49 @@ describe('arrival seal serialization', () => {
       duration: '10:00',
       completion: '100%',
       date: 'EDO · 2026.07.21',
+      courierGameName: '星図ノ測姫・忠敬',
+      courierFigureEn: 'Ino Tadataka',
+      crestName: '測道星輪紋',
     })
 
-    expect(summary).toBe('My HIYAKU courier seal is stamped: Swift Courier — The Lantern Ledger. 800m in 10:00, 100% complete.')
+    expect(summary).toBe('My HIYAKU courier seal is stamped: Swift Courier — The Lantern Ledger, carried by 星図ノ測姫・忠敬 for Ino Tadataka (測道星輪紋). 800m in 10:00, 100% complete.')
     expect(summary).not.toMatch(/latitude|longitude|coordinate|日本橋/i)
     expect(formatSealDate(new Date(2026, 6, 21))).toBe('EDO · 2026.07.21')
+  })
+
+  it('uses visibly distinct courier identity text for different seals', () => {
+    const tadatakaSeal = buildSealSummary({ missionTitle: 'Dispatch', rank: 'Edo Roadrunner', distance: '800m', duration: '10:00', completion: '100%', date: 'EDO · 2026.07.21', courierGameName: getCourier('tadataka').gameName, courierFigureEn: getCourier('tadataka').figureEn, crestName: getCourier('tadataka').crestName })
+    const dokanSeal = buildSealSummary({ missionTitle: 'Dispatch', rank: 'Edo Roadrunner', distance: '800m', duration: '10:00', completion: '100%', date: 'EDO · 2026.07.21', courierGameName: getCourier('dokan').gameName, courierFigureEn: getCourier('dokan').figureEn, crestName: getCourier('dokan').crestName })
+
+    expect(tadatakaSeal).not.toBe(dokanSeal)
+    expect(tadatakaSeal).toContain('測道星輪紋')
+    expect(dokanSeal).toContain('山吹城輪紋')
+  })
+})
+
+describe('curated courier missions', () => {
+  it('flows the selected courierId into an app-owned historical note', () => {
+    const dokanMission = mockGenerateMission({ availableMinutes: 10, energy: 'Ready', courierId: 'dokan', displayName: 'Ada' })
+
+    expect(dokanMission.courierId).toBe('dokan')
+    expect(dokanMission.historicalNote).toBe(COURIERS.find((courier) => courier.id === 'dokan')?.historicalFact)
+    expect(dokanMission.historicalNote).toBe('A 15th-century warrior-poet who built the first Edo Castle in 1457, on the ground that would centuries later become Tokyo.')
+  })
+
+  it('returns a courier-aware deterministic Worker fallback when OpenAI is unavailable', async () => {
+    const input = { availableMinutes: 5, energy: 'Steady', courierId: 'dokan' as const }
+    const response = await worker.fetch(new Request('https://hiyaku.test/api/mission', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(input),
+    }), {})
+    const fallback = await response.json() as ReturnType<typeof mockGenerateMission>
+
+    expect(response.status).toBe(200)
+    expect(fallback.courierId).toBe('dokan')
+    expect(fallback.historicalNote).toBe(getCourier('dokan').historicalFact)
+    expect(fallback.title).toContain('山吹ノ城姫・道灌')
+    expect(fallback.briefing).toContain('Edo Castle')
   })
 })
 

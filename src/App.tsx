@@ -9,6 +9,7 @@ import {
   type MissionCompletion,
   type MissionInput,
 } from '../shared/mockMission'
+import { COURIERS, getCourier, type CourierId } from '../shared/couriers'
 import { distanceTargetMetres, rivalDistanceAtElapsedSeconds, type MovementMode, startWalkTracking } from './movement'
 import { checkpointRouteState } from './checkpointRoute'
 import { ArrivalSeal, buildSealSummary, formatSealDate, sealCanvasDataUrl, type ArrivalSealData } from './ArrivalSeal'
@@ -95,6 +96,7 @@ export function DispatchScreen({ onGenerate, generating }: { onGenerate: (input:
   const [energy, setEnergy] = useState<Energy>('Steady')
   const [displayName, setDisplayName] = useState('')
   const [movementMode, setMovementMode] = useState<MovementMode>('demo')
+  const [courierId, setCourierId] = useState<CourierId>('tadataka')
 
   return (
     <main className="screen dispatch-screen" aria-labelledby="dispatch-title">
@@ -118,7 +120,7 @@ export function DispatchScreen({ onGenerate, generating }: { onGenerate: (input:
         className="dispatch-form"
         onSubmit={(event) => {
           event.preventDefault()
-          onGenerate({ availableMinutes, energy, displayName: displayName.trim() || undefined }, movementMode)
+          onGenerate({ availableMinutes, energy, courierId, displayName: displayName.trim() || undefined }, movementMode)
         }}
       >
         <fieldset>
@@ -128,6 +130,23 @@ export function DispatchScreen({ onGenerate, generating }: { onGenerate: (input:
               <label className="choice" key={minutes}>
                 <input type="radio" name="minutes" value={minutes} checked={availableMinutes === minutes} onChange={() => setAvailableMinutes(minutes)} />
                 <span>{minutes}<small> min</small></span>
+              </label>
+            ))}
+          </div>
+        </fieldset>
+
+        <fieldset className="courier-fieldset">
+          <legend>Choose your courier</legend>
+          <div className="courier-picker" role="radiogroup" aria-label="Choose your historical courier">
+            {COURIERS.map((courier) => (
+              <label className="courier-choice" key={courier.id}>
+                <input type="radio" name="courier" value={courier.id} checked={courierId === courier.id} onChange={() => setCourierId(courier.id)} />
+                <span className="courier-card">
+                  <strong>{courier.gameName}</strong>
+                  <small>{courier.classEn} · {courier.attribute}</small>
+                  <em>{courier.figureEn}</em>
+                  <i>Empowered by {courier.empoweredBy}</i>
+                </span>
               </label>
             ))}
           </div>
@@ -184,6 +203,7 @@ export function JourneyScreen({ mission, state, stats, targetDistanceMetres, ava
   onPause: () => void
   onEnd: () => void
 }) {
+  const courier = getCourier(mission.courierId)
   const distance = Math.round(stats.distanceMetres)
   const rivalDistance = rivalDistanceAtElapsedSeconds(targetDistanceMetres, availableMinutes, mission.title, stats.elapsedSeconds)
   const progressLabel = state === 'ready' ? 'Mission ready' : state === 'paused' ? 'Journey paused' : state === 'completing' ? 'Writing arrival…' : movementMode === 'walk' ? 'Real Walk' : 'Judge Demo'
@@ -196,6 +216,7 @@ export function JourneyScreen({ mission, state, stats, targetDistanceMetres, ava
         <div>
           <p className="eyebrow">{progressLabel}</p>
           <h1 id="journey-title">{mission.title}</h1>
+          <p className="courier-leading">率いる飛脚: {courier.gameName}</p>
         </div>
         <span className="demo-badge">{movementMode === 'walk' ? 'REAL WALK' : 'JUDGE DEMO'}</span>
       </header>
@@ -228,6 +249,8 @@ export function JourneyScreen({ mission, state, stats, targetDistanceMetres, ava
         {locationStatus && <p className="location-status">{locationStatus}</p>}
       </section>
 
+      <p className="empowered-line">Your {courier.empoweredBy} strengthens {courier.gameName}.</p>
+
       <section className="journey-detail" aria-label="Journey metrics">
         <span><strong>{formatDuration(stats.elapsedSeconds)}</strong> elapsed</span>
         <span><strong>{Math.max(targetDistanceMetres - distance, 0)}m</strong> remaining</span>
@@ -256,6 +279,7 @@ export function ArrivalScreen({ mission, completion, stats, targetDistanceMetres
   availableMinutes: AvailableMinutes
   onRestart: () => void
 }) {
+  const courier = getCourier(mission.courierId)
   const distance = Math.round(stats.distanceMetres)
   const rivalDistance = rivalDistanceAtElapsedSeconds(targetDistanceMetres, availableMinutes, mission.title, stats.elapsedSeconds)
   const [shareStatus, setShareStatus] = useState('')
@@ -267,6 +291,9 @@ export function ArrivalScreen({ mission, completion, stats, targetDistanceMetres
     duration: formatDuration(stats.elapsedSeconds),
     completion: `${stats.progress}%`,
     date: formatSealDate(),
+    courierGameName: courier.gameName,
+    courierFigureEn: courier.figureEn,
+    crestName: courier.crestName,
   }
   const text = buildSealSummary(sealData)
 
@@ -427,6 +454,7 @@ export default function App() {
       durationSeconds: stats.elapsedSeconds,
       completionPercent: 100,
       missionTitle: mission.title,
+      courierId: mission.courierId,
     }
     void postApi('/api/complete', summary, isMissionCompletion)
       .then((result) => {

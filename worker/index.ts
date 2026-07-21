@@ -6,6 +6,7 @@ import {
   type CompletionSummary,
   type MissionInput,
 } from '../shared/mockMission'
+import { COURIERS } from '../shared/couriers'
 
 interface Env {
   OPENAI_API_KEY?: string
@@ -140,17 +141,22 @@ const completionSchema = {
   },
 }
 
+function courierFor(courierId: MissionInput['courierId']) {
+  return COURIERS.find((courier) => courier.id === courierId)!
+}
+
 function missionRequest(input: MissionInput): unknown {
+  const courier = courierFor(input.courierId)
   return {
     model: openAiModel,
     messages: [
       {
         role: 'system',
-        content: 'You write concise, warm fictional Edo courier mission narrative. Return only JSON matching the supplied schema. Do not include historical facts or a historicalNote field.',
+        content: 'You write concise, warm fictional Edo courier mission narrative. Return only JSON matching the supplied schema. Write in the selected courier’s fantasy persona and voice. Use the supplied class and landmark as fictional setting texture. Do not state, imply, or invent historical facts, dates, achievements, biographies, or a historicalNote field; the app owns all history.',
       },
       {
         role: 'user',
-        content: `Create a mission for this app-decided input: ${JSON.stringify(input)}. Tailor tone and effort to availableMinutes and energy. The optional displayName may be used naturally. Provide a title, a briefing, encouragement for progress at 25%, 50%, and 75%, and a completionStyle. Keep every field short and concrete.`,
+        content: `Create a mission for this app-decided input: ${JSON.stringify(input)}. Courier persona: ${JSON.stringify({ gameName: courier.gameName, figure: courier.figure, class: courier.class, classEn: courier.classEn, attribute: courier.attribute, landmark: courier.landmark, empoweredBy: courier.empoweredBy })}. Tailor tone and effort to availableMinutes and energy. The optional displayName may be used naturally. Provide a title, a briefing, encouragement for progress at 25%, 50%, and 75%, and a completionStyle. Keep every field short and concrete.`,
       },
     ],
     response_format: {
@@ -161,16 +167,17 @@ function missionRequest(input: MissionInput): unknown {
 }
 
 function completionRequest(summary: CompletionSummary, rank: string): unknown {
+  const courier = courierFor(summary.courierId)
   return {
     model: openAiModel,
     messages: [
       {
         role: 'system',
-        content: 'You write concise, warm fictional Edo courier arrival narrative. Return only JSON matching the supplied schema. The app has already decided completion and rank; do not change or evaluate them.',
+        content: 'You write concise, warm fictional Edo courier arrival narrative. Return only JSON matching the supplied schema. Write in the selected courier’s fantasy persona and voice. The app has already decided completion and rank; do not change or evaluate them. Do not state, imply, or invent historical facts, dates, achievements, or biographies.',
       },
       {
         role: 'user',
-        content: `Write an arrival epilogue and a next-mission teaser for this completed courier run: ${JSON.stringify({ ...summary, rank })}. Explicitly weave the missionTitle and rounded distance in metres into the epilogue.`,
+        content: `Write an arrival epilogue and a next-mission teaser for this completed courier run: ${JSON.stringify({ ...summary, rank })}. Courier persona: ${JSON.stringify({ gameName: courier.gameName, figure: courier.figure, class: courier.class, classEn: courier.classEn, attribute: courier.attribute, landmark: courier.landmark })}. Explicitly weave the missionTitle and rounded distance in metres into the epilogue.`,
       },
     ],
     response_format: {
@@ -189,15 +196,15 @@ export default {
     const body = await readJson(request)
     if (url.pathname === '/api/mission') {
       if (!isMissionInput(body)) {
-        return json({ error: 'Invalid mission input. Expected availableMinutes (5, 10, or 15), energy, and optional displayName.' }, 400)
+        return json({ error: 'Invalid mission input. Expected availableMinutes (5, 10, or 15), energy, courierId, and optional displayName.' }, 400)
       }
       const fallback = mockGenerateMission(body)
       const narrative = await callOpenAi(env, missionRequest(body), isNarrativeMission)
-      return json(narrative ? { ...narrative, historicalNote: fallback.historicalNote } : fallback)
+      return json(narrative ? { ...narrative, courierId: body.courierId, historicalNote: fallback.historicalNote } : fallback)
     }
     if (url.pathname === '/api/complete') {
       if (!isCompletionSummary(body)) {
-        return json({ error: 'Invalid completion summary. Expected numeric distanceMeters, durationSeconds, completionPercent, and string missionTitle.' }, 400)
+        return json({ error: 'Invalid completion summary. Expected numeric distanceMeters, durationSeconds, completionPercent, string missionTitle, and courierId.' }, 400)
       }
       const fallback = mockCompleteMission(body)
       const narrative = await callOpenAi(env, completionRequest(body, fallback.rank), isNarrativeCompletion)
@@ -205,4 +212,4 @@ export default {
     }
     return json({ error: 'Not found.' }, 404)
   },
-} satisfies ExportedHandler<Env>
+} satisfies { fetch(request: Request, env: Env): Response | Promise<Response> }

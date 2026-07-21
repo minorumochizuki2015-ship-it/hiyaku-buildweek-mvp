@@ -5,6 +5,9 @@ export interface ArrivalSealData {
   duration: string
   completion: string
   date: string
+  courierGameName: string
+  courierFigureEn: string
+  crestName: string
 }
 
 function cleanLine(value: string, limit: number): string {
@@ -19,7 +22,7 @@ export function formatSealDate(date = new Date()): string {
 }
 
 export function buildSealSummary(data: ArrivalSealData): string {
-  return `My HIYAKU courier seal is stamped: ${cleanLine(data.rank, 72)} — ${cleanLine(data.missionTitle, 96)}. ${cleanLine(data.distance, 24)} in ${cleanLine(data.duration, 24)}, ${cleanLine(data.completion, 24)} complete.`
+  return `My HIYAKU courier seal is stamped: ${cleanLine(data.rank, 72)} — ${cleanLine(data.missionTitle, 96)}, carried by ${cleanLine(data.courierGameName, 72)} for ${cleanLine(data.courierFigureEn, 72)} (${cleanLine(data.crestName, 72)}). ${cleanLine(data.distance, 24)} in ${cleanLine(data.duration, 24)}, ${cleanLine(data.completion, 24)} complete.`
 }
 
 function wrapCanvasText(context: CanvasRenderingContext2D, value: string, maxWidth: number): string[] {
@@ -75,7 +78,14 @@ export function drawArrivalSeal(context: CanvasRenderingContext2D, data: Arrival
   const missionLines = wrapCanvasText(context, cleanLine(data.missionTitle, 96), width - 130)
   missionLines.forEach((line, index) => drawCentered(context, line, centreX, 138 + index * 37))
 
-  const sealY = height * 0.47
+  context.fillStyle = '#f6d78f'
+  context.font = '700 21px Georgia, "Hiragino Mincho ProN", serif'
+  drawCentered(context, cleanLine(data.courierGameName, 72), centreX, 221)
+  context.fillStyle = '#cfc7bd'
+  context.font = '700 14px Arial, sans-serif'
+  drawCentered(context, `CARRIED FOR ${cleanLine(data.courierFigureEn, 72)}`, centreX, 249)
+
+  const sealY = height * 0.5
   context.save()
   context.translate(centreX, sealY)
   context.rotate(-0.08)
@@ -94,6 +104,9 @@ export function drawArrivalSeal(context: CanvasRenderingContext2D, data: Arrival
   context.font = '700 15px Arial, sans-serif'
   context.letterSpacing = '3px'
   drawCentered(context, 'DELIVERED', 0, 76)
+  context.font = '700 13px Georgia, "Hiragino Mincho ProN", serif'
+  context.letterSpacing = '1px'
+  drawCentered(context, cleanLine(data.crestName, 72), 0, 100)
   context.restore()
   context.letterSpacing = '0px'
 
@@ -138,9 +151,12 @@ export function ArrivalSeal({ data }: { data: ArrivalSealData }) {
       <div className="seal-certificate">
         <p className="seal-brand">HIYAKU · ARRIVAL SEAL</p>
         <p className="seal-mission">{data.missionTitle}</p>
+        <p className="seal-courier">{data.courierGameName}</p>
+        <p className="seal-figure">carried for {data.courierFigureEn}</p>
         <div className="seal-stamp" aria-hidden="true">
           <span>飛</span>
           <small>DELIVERED</small>
+          <b>{data.crestName}</b>
         </div>
         <p className="seal-rank">{data.rank}</p>
         <div className="seal-metrics">

@@ -1,13 +1,17 @@
+import { getCourier, isCourierId, type CourierId } from './couriers'
+
 export type AvailableMinutes = 5 | 10 | 15
 export type Energy = 'Low' | 'Steady' | 'Ready'
 
 export interface MissionInput {
   availableMinutes: AvailableMinutes
   energy: Energy
+  courierId: CourierId
   displayName?: string
 }
 
 export interface Mission {
+  courierId: CourierId
   title: string
   briefing: string
   milestones: Record<25 | 50 | 75, string>
@@ -20,6 +24,7 @@ export interface CompletionSummary {
   durationSeconds: number
   completionPercent: number
   missionTitle: string
+  courierId: CourierId
 }
 
 export interface MissionCompletion {
@@ -27,42 +32,6 @@ export interface MissionCompletion {
   epilogue: string
   nextMissionTeaser: string
 }
-
-const missions: Mission[] = [
-  {
-    title: 'The Lantern Ledger',
-    briefing: 'Carry the evening ledger from Nihonbashi before the last lantern is lit.',
-    milestones: {
-      25: 'The bridge keeper nods. Your first steps are on time.',
-      50: 'Halfway there — keep the ledger dry and your pace steady.',
-      75: 'The lanterns are close. One last careful push.',
-    },
-    historicalNote: 'Nihonbashi was the traditional starting point for the five great roads of Edo.',
-    completionStyle: 'Measured and dependable',
-  },
-  {
-    title: 'Rain at Tokaido Gate',
-    briefing: 'A message must reach the gate before the rain turns the road to silver.',
-    milestones: {
-      25: 'A cool drop lands on your sleeve. The road is yours.',
-      50: 'The gate flag is visible beyond the rooftops.',
-      75: 'Your message is nearly safe from the weather.',
-    },
-    historicalNote: 'The Tokaido connected Edo and Kyoto and was the most traveled of the five routes.',
-    completionStyle: 'Calm under pressure',
-  },
-  {
-    title: 'The Tea House Reply',
-    briefing: 'Deliver a gracious reply before the tea house closes its sliding doors.',
-    milestones: {
-      25: 'The scent of roasted tea points you onward.',
-      50: 'Your destination is now part of the evening bustle.',
-      75: 'The tea house bell is within reach.',
-    },
-    historicalNote: 'Edo tea houses were lively social stops for travelers, messengers, and merchants.',
-    completionStyle: 'Warm and swift',
-  },
-]
 
 function hashText(value: string): number {
   let hash = 2166136261
@@ -74,16 +43,35 @@ function hashText(value: string): number {
 }
 
 export function mockGenerateMission(input: MissionInput): Mission {
-  const seed = `${input.availableMinutes}|${input.energy}|${input.displayName?.trim().toLowerCase() ?? ''}`
-  return missions[hashText(seed) % missions.length]
+  const courier = getCourier(input.courierId)
+  const seed = `${input.courierId}|${input.availableMinutes}|${input.energy}|${input.displayName?.trim().toLowerCase() ?? ''}`
+  const dispatches = [
+    ['the Lantern Dispatch', 'A sealed dispatch awaits beneath the evening lanterns.'],
+    ['the Dawn Reply', 'A reply must reach its door before the morning crowd gathers.'],
+    ['the Wayfarer’s Token', 'A wayfarer’s token needs a steady hand and a clear road.'],
+  ] as const
+  const [dispatch, premise] = dispatches[hashText(seed) % dispatches.length]
+  return {
+    courierId: courier.id as CourierId,
+    title: `${courier.gameName}: ${dispatch}`,
+    briefing: `${courier.gameName} leads from ${courier.landmark}. ${premise} Keep your ${courier.classEn.toLowerCase()} focus and carry it with care.`,
+    milestones: {
+      25: `${courier.gameName} marks the first stretch. Your ${courier.attribute} spirit is steady.`,
+      50: `Halfway to the handoff — ${courier.gameName} keeps the route clear.`,
+      75: `${courier.landmark} feels close. One more measured push for the dispatch.`,
+    },
+    historicalNote: courier.historicalFact,
+    completionStyle: `${courier.classEn} poise, carried with ${input.energy.toLowerCase()} resolve`,
+  }
 }
 
 export function mockCompleteMission(summary: CompletionSummary): MissionCompletion {
+  const courier = getCourier(summary.courierId)
   const rank = summary.completionPercent >= 100 ? 'Edo Roadrunner' : 'Steady Courier'
   return {
     rank,
-    epilogue: `${summary.missionTitle} is complete. Your ${Math.round(summary.distanceMeters)} metre journey reached its destination as an ${rank}.`,
-    nextMissionTeaser: 'Next time, a dawn message waits at the river crossing.',
+    epilogue: `${courier.gameName} records ${summary.missionTitle} as complete. Your ${Math.round(summary.distanceMeters)} metre journey reached its destination as an ${rank}.`,
+    nextMissionTeaser: `${courier.gameName} will have another dispatch ready beyond ${courier.landmark}.`,
   }
 }
 
@@ -93,6 +81,7 @@ export function isMissionInput(value: unknown): value is MissionInput {
   return (
     (input.availableMinutes === 5 || input.availableMinutes === 10 || input.availableMinutes === 15) &&
     (input.energy === 'Low' || input.energy === 'Steady' || input.energy === 'Ready') &&
+    isCourierId(input.courierId) &&
     (input.displayName === undefined || typeof input.displayName === 'string')
   )
 }
@@ -104,7 +93,8 @@ export function isCompletionSummary(value: unknown): value is CompletionSummary 
     typeof summary.distanceMeters === 'number' &&
     typeof summary.durationSeconds === 'number' &&
     typeof summary.completionPercent === 'number' &&
-    typeof summary.missionTitle === 'string'
+    typeof summary.missionTitle === 'string' &&
+    isCourierId(summary.courierId)
   )
 }
 
@@ -123,8 +113,10 @@ export function isMission(value: unknown): value is Mission {
     isNonEmptyString(milestones['25']) &&
     isNonEmptyString(milestones['50']) &&
     isNonEmptyString(milestones['75']) &&
+    isCourierId(mission.courierId) &&
     isNonEmptyString(mission.historicalNote) &&
-    isNonEmptyString(mission.completionStyle)
+    isNonEmptyString(mission.completionStyle) &&
+    mission.historicalNote === getCourier(mission.courierId).historicalFact
   )
 }
 

@@ -56,6 +56,16 @@ h2 { font-size: 1.7rem; line-height: 1.3; }
 .dispatch-form { display: grid; gap: 18px; margin-top: auto; }
 fieldset { min-width: 0; margin: 0; padding: 0; border: 0; }
 legend, .name-field > span { display: block; margin-bottom: 9px; color: #e8e4dc; font-size: .78rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
+.courier-picker { display: flex; gap: 9px; padding: 1px 1px 8px; overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x proximity; scrollbar-color: #725da5 transparent; }
+.courier-choice { position: relative; flex: 0 0 172px; scroll-snap-align: start; }
+.courier-choice input { position: absolute; opacity: 0; }
+.courier-card { display: grid; min-height: 126px; align-content: start; gap: 5px; padding: 12px; border: 1px solid rgb(247 242 232 / 27%); border-radius: 12px; background: linear-gradient(145deg, rgb(247 242 232 / 10%), rgb(156 120 255 / 7%)); color: #f7f2e8; cursor: pointer; transition: .18s ease; }
+.courier-card strong { color: #fff1c7; font-family: Georgia, "Hiragino Mincho ProN", serif; font-size: .98rem; line-height: 1.25; }
+.courier-card small { color: #f7d98a; font-size: .67rem; font-weight: 900; letter-spacing: .07em; text-transform: uppercase; }
+.courier-card em { color: #d4cddd; font-size: .72rem; font-style: normal; line-height: 1.3; }
+.courier-card i { margin-top: auto; color: #c9c0de; font-size: .65rem; font-style: normal; line-height: 1.35; }
+.courier-choice input:checked + .courier-card { border-color: #f4b942; background: linear-gradient(145deg, rgb(244 185 66 / 28%), rgb(156 120 255 / 22%)); box-shadow: inset 0 0 0 1px rgb(255 255 255 / 19%), 0 5px 15px rgb(244 185 66 / 16%); }
+.courier-choice input:focus-visible + .courier-card { outline: 3px solid #f4b942; outline-offset: 3px; }
 .name-field em { color: #bebac7; font-weight: 600; font-style: normal; text-transform: none; letter-spacing: 0; }
 .choice-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
 .choice { position: relative; min-width: 0; }
@@ -80,6 +90,7 @@ legend, .name-field > span { display: block; margin-bottom: 9px; color: #e8e4dc;
 }
 .journey-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; }
 .journey-header .eyebrow { color: #f7d98a; }
+.courier-leading { margin: 9px 0 0; color: #d4c6ff; font-size: .8rem; font-weight: 800; line-height: 1.4; }
 .demo-badge { display: inline-grid; min-width: 56px; min-height: 28px; place-items: center; border: 1px solid #9c78ff; border-radius: 999px; color: #d4c6ff; font-size: .67rem; font-weight: 900; letter-spacing: .12em; }
 .journey-stage { position: relative; display: grid; min-height: min(51vh, 390px); margin: 15px -20px 14px; overflow: hidden; place-items: center; border-block: 1px solid rgb(247 217 138 / 30%); background: #171631; }
 .route-map { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center; opacity: .76; filter: saturate(.9) contrast(1.06); }
@@ -111,6 +122,7 @@ legend, .name-field > span { display: block; margin-bottom: 9px; color: #e8e4dc;
 .mission-message { min-height: 74px; padding: 15px 16px; border-left: 3px solid #f4b942; border-radius: 0 10px 10px 0; background: #191d36; }
 .mission-message p { margin: 0; color: #f7f2e8; font-family: Georgia, "Hiragino Mincho ProN", serif; font-size: 1.04rem; line-height: 1.55; }
 .mission-message .location-status { margin-top: 7px; color: #f7d98a; font-family: "Avenir Next", "Hiragino Kaku Gothic ProN", sans-serif; font-size: .78rem; font-weight: 700; }
+.empowered-line { margin: 11px 2px 0; color: #d4c6ff; font-size: .78rem; font-weight: 700; line-height: 1.45; }
 .journey-detail { display: flex; justify-content: space-between; gap: 12px; margin: 15px 2px; color: #c9c5d0; font-size: .75rem; letter-spacing: .04em; text-transform: uppercase; }
 .journey-detail strong { margin-right: 4px; color: #f7d98a; font-size: .98rem; }
 .rival-comparison { margin: 0 2px 15px; color: #e8e4dc; font-size: .87rem; line-height: 1.5; }
@@ -131,12 +143,15 @@ legend, .name-field > span { display: block; margin-bottom: 9px; color: #e8e4dc;
 .arrival-header h1 { max-width: 340px; color: #fffaf0; text-shadow: 0 3px 18px rgb(0 0 0 / 72%); }
 .arrival-kicker { margin: 12px 0 0; max-width: 270px; color: #fff7e8; font-family: Georgia, "Hiragino Mincho ProN", serif; line-height: 1.5; text-shadow: 0 2px 9px rgb(0 0 0 / 72%); }
 .arrival-seal { position: relative; margin: -26px 0 18px; padding: 5px; border-radius: 21px; background: linear-gradient(135deg, #f5ca70, #a92f2c 44%, #f5ca70); box-shadow: 0 16px 38px rgb(0 0 0 / 40%); }
-.seal-certificate { display: grid; min-height: 442px; padding: 18px 17px 14px; overflow: hidden; border: 1px solid rgb(255 232 177 / 72%); border-radius: 17px; background: radial-gradient(circle at 50% 42%, rgb(244 185 66 / 22%), transparent 39%), linear-gradient(145deg, #20172b, #10152b 67%); text-align: center; }
+.seal-certificate { display: grid; min-height: 478px; padding: 18px 17px 14px; overflow: hidden; border: 1px solid rgb(255 232 177 / 72%); border-radius: 17px; background: radial-gradient(circle at 50% 42%, rgb(244 185 66 / 22%), transparent 39%), linear-gradient(145deg, #20172b, #10152b 67%); text-align: center; }
 .seal-brand, .seal-date { margin: 0; color: #f8d782; font-size: .64rem; font-weight: 900; letter-spacing: .17em; }
 .seal-mission { min-height: 2.7em; margin: 12px auto 5px; color: #fff3d5; font-family: Georgia, "Hiragino Mincho ProN", serif; font-size: clamp(1.15rem, 5vw, 1.48rem); font-weight: 700; line-height: 1.25; }
+.seal-courier { margin: 0; color: #f7d98a; font-family: Georgia, "Hiragino Mincho ProN", serif; font-size: .9rem; font-weight: 800; line-height: 1.35; }
+.seal-figure { margin: 3px 0 5px; color: #c9c5d0; font-size: .65rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
 .seal-stamp { display: grid; width: 184px; height: 184px; margin: 1px auto 10px; place-content: center; border: 5px double #ffc88b; border-radius: 50%; background: #bc3d32; color: #ffebbd; box-shadow: 0 0 0 7px rgb(188 61 50 / 24%), inset 0 0 0 9px rgb(93 22 24 / 18%); transform: rotate(-5deg); }
 .seal-stamp span { display: block; font-family: Georgia, "Hiragino Mincho ProN", serif; font-size: 6.1rem; font-weight: 800; line-height: .78; }
 .seal-stamp small { margin-top: 17px; font-size: .55rem; font-weight: 900; letter-spacing: .22em; }
+.seal-stamp b { margin-top: 5px; font-family: Georgia, "Hiragino Mincho ProN", serif; font-size: .56rem; letter-spacing: .08em; }
 .seal-rank { margin: 0; color: #f7d98a; font-family: Georgia, "Hiragino Mincho ProN", serif; font-size: 1.4rem; font-weight: 700; line-height: 1.25; }
 .seal-metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; margin: 15px 0 11px; padding: 12px 0; border-block: 1px solid rgb(247 217 138 / 35%); }
 .seal-metrics span { min-width: 0; color: #d4cddd; font-size: .57rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
