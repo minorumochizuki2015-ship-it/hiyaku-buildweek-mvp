@@ -21,7 +21,7 @@ describe('HIKYAKU static screens', () => {
     expect(screen).toContain('Judge Demo')
     expect(screen).toContain('Judge Demo simulates the walk so you can complete a full mission without moving.')
     expect(screen).toContain('Real Walk: your location stays on your device.')
-    expect(screen).toContain('/assets/courier-kanto-card.png')
+    expect(screen).toContain('/assets/dispatch-hero-v3b.png')
     expect(screen).toContain('Courier on duty')
     expect(screen).toContain(MIKOTO.gameName)
     expect(screen).toContain(MIKOTO.titleEn)

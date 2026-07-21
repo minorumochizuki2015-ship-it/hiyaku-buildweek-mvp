@@ -47,11 +47,13 @@ h2 { font-size: 1.7rem; line-height: 1.3; }
 }
 .masthead { display: flex; align-items: flex-start; gap: 13px; }
 .brand-mark { display: grid; width: 42px; height: 42px; place-items: center; flex: 0 0 auto; border: 1px solid #f7d98a; border-radius: 50%; background: #281f4a; color: #f7d98a; font-family: Georgia, serif; font-size: 1.35rem; font-weight: 800; }
-.dispatch-hero { position: relative; display: grid; grid-template-columns: minmax(0, 1.12fr) minmax(130px, .88fr); gap: 14px; align-items: end; margin: 24px 0 20px; }
-.dispatch-hero::after { position: absolute; right: 2px; bottom: -8px; left: 12%; height: 1px; content: ""; background: linear-gradient(90deg, transparent, #f4b942, transparent); }
-.dispatch-hero img { width: 100%; min-height: 244px; object-fit: cover; object-position: center top; border: 1px solid rgb(247 217 138 / 75%); border-radius: 20px 20px 7px 7px; box-shadow: 0 17px 40px rgb(0 0 0 / 35%); }
-.dispatch-hero-copy { padding: 0 0 13px; }
-.dispatch-hero-copy p { margin: 14px 0 0; color: #e8e4dc; font-size: .96rem; line-height: 1.75; }
+/* Full-bleed hero scene (no trading-card frame). The illustration runs edge to edge
+   as an integrated night-bridge scene; the intro copy sits just below it. */
+.dispatch-hero { position: relative; margin: 8px -20px 16px; }
+.dispatch-hero img { display: block; width: 100%; aspect-ratio: 852 / 740; object-fit: cover; object-position: center top; border: 0; border-radius: 0; box-shadow: none; -webkit-mask-image: linear-gradient(180deg, #000 80%, transparent 100%); mask-image: linear-gradient(180deg, #000 80%, transparent 100%); }
+.dispatch-hero-copy { position: relative; padding: 0 20px; margin-top: -30px; }
+.dispatch-hero-copy .seal { position: absolute; top: -150px; right: 22px; }
+.dispatch-hero-copy p { max-width: 62%; margin: 0; color: #e8e4dc; font-size: .96rem; line-height: 1.7; }
 .seal { display: inline-grid; width: 54px; height: 54px; place-items: center; border: 1px solid #9c78ff; border-radius: 50%; color: #c8b7ff; font-size: .61rem; font-weight: 800; letter-spacing: .08em; line-height: 1.2; text-align: center; transform: rotate(-9deg); }
 .dispatch-form { display: grid; gap: 18px; margin-top: auto; }
 fieldset { min-width: 0; margin: 0; padding: 0; border: 0; }

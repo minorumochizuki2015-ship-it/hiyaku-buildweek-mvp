@@ -206,7 +206,7 @@ export function DispatchScreen({ onGenerate, generating }: { onGenerate: (input:
       </header>
 
       <section className="dispatch-hero" aria-label="Edo courier introduction">
-        <img src="/assets/courier-kanto-card.png" alt="Edo courier of Kanto, ready for dispatch" />
+        <img src="/assets/dispatch-hero-v3b.png" alt="東雲ミコト, the Edo courier, on a moonlit river bridge" />
         <div className="dispatch-hero-copy">
           <span className="seal">DEMO<br />EDO</span>
           <p>You are an Edo hikyaku (courier). Accept a dispatch, carry it, arrive.</p>
