@@ -1,6 +1,6 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it, vi } from 'vitest'
-import { AppShell, ArrivalScreen, DispatchScreen, JourneyScreen, LanguageToggle, journeyStateAfterAccept } from './App'
+import { AppShell, ArrivalScreen, DispatchScreen, JourneyScreen, LanguageToggle, journeyStateAfterAccept, nutritionStateFor } from './App'
 import { checkpointRouteState } from './checkpointRoute'
 import { distanceTargetMetres, haversineDistanceMetres, rivalDistanceAtElapsedSeconds, rivalPaceMultiplier, startWalkTracking } from './movement'
 import { buildSealSummary, formatSealDate, sealCanvasDataUrl } from './ArrivalSeal'
@@ -53,6 +53,15 @@ describe('HIYAKU static screens', () => {
     expect(screen).toContain('carried for Ino Tadataka')
     expect(screen).toContain('測道星輪紋')
     expect(screen).not.toContain('meal-reward-kanto.mp4')
+  })
+
+  it('keeps the existing Arrival-to-Nutrition route available', () => {
+    const completion = mockCompleteMission({ distanceMeters: 480, durationSeconds: 100, completionPercent: 100, missionTitle: mission.title, courierId: mission.courierId })
+    const screen = renderToStaticMarkup(<ArrivalScreen mission={mission} completion={completion} stats={{ elapsedSeconds: 100, progress: 100, distanceMetres: 480 }} targetDistanceMetres={480} availableMinutes={10} onRestart={() => undefined} onNutrition={() => undefined} />)
+
+    expect(nutritionStateFor('arrival')).toBe('nutrition')
+    expect(screen).toContain('食の帳簿')
+    expect(screen).toContain('View nutrition report')
   })
 })
 

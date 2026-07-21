@@ -16,7 +16,7 @@ import { ArrivalSeal, buildSealSummary, formatSealDate, sealCanvasDataUrl, type 
 import { NutritionScreen } from './NutritionScreen'
 import { localizeContent, t, type Locale } from './i18n'
 
-type JourneyState = 'idle' | 'generating' | 'ready' | 'active' | 'paused' | 'completing' | 'completed' | 'nutrition'
+type JourneyState = 'idle' | 'generating' | 'nutrition-before-journey' | 'ready' | 'active' | 'paused' | 'completing' | 'completed' | 'nutrition'
 export type NavTab = 'town' | 'workout' | 'dispatch' | 'flags' | 'records'
 
 const NAV_ITEMS: ReadonlyArray<{ id: NavTab; icon: string; label: 'nav.town' | 'nav.workout' | 'nav.dispatch' | 'nav.flags' | 'nav.records' }> = [
@@ -26,6 +26,10 @@ const NAV_ITEMS: ReadonlyArray<{ id: NavTab; icon: string; label: 'nav.town' | '
   { id: 'flags', icon: '🚩', label: 'nav.flags' },
   { id: 'records', icon: '📖', label: 'nav.records' },
 ]
+
+export function nutritionStateFor(entry: 'dispatch' | 'arrival'): Extract<JourneyState, 'nutrition-before-journey' | 'nutrition'> {
+  return entry === 'dispatch' ? 'nutrition-before-journey' : 'nutrition'
+}
 
 interface JourneyStats {
   elapsedSeconds: number
@@ -582,7 +586,7 @@ export default function App() {
       setMovementMode(selectedMovementMode)
       setLocationStatus('')
       setSelectedTab('dispatch')
-      setState(journeyStateAfterAccept())
+      setState(nutritionStateFor('dispatch'))
     } catch {
       setState('idle')
     }
@@ -595,6 +599,8 @@ export default function App() {
     content = <ComingSoonScreen tab={selectedTab} locale={locale} onReturnToDispatch={() => setSelectedTab('dispatch')} />
   } else if (state === 'idle' || state === 'generating') {
     content = <DispatchScreen onGenerate={generateMission} generating={state === 'generating'} />
+  } else if (state === 'nutrition-before-journey') {
+    content = <NutritionScreen onBack={() => setState('idle')} backLabel="Dispatch" onContinue={() => setState('ready')} />
   } else if (missionInProgress && activeMission) {
     content = <JourneyScreen mission={activeMission} state={state} stats={stats} targetDistanceMetres={targetDistanceMetres ?? 0} availableMinutes={availableMinutes} movementMode={movementMode} locationStatus={locationStatus} onPause={() => setState((current) => current === 'paused' ? 'active' : 'paused')} onEnd={() => {
       distanceMetresRef.current = targetDistanceMetres ?? 0
