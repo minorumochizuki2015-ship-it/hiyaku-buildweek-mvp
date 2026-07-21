@@ -1,4 +1,5 @@
 import './town-home.css'
+import { TownGrowth } from './TownGrowth'
 
 export type TownHomeLocale = 'en' | 'ja'
 
@@ -76,8 +77,16 @@ function formatDistance(distanceMetres: number, locale: TownHomeLocale): string 
   return locale === 'ja' ? `${distanceMetres}m` : `${distanceMetres} m`
 }
 
+function measuredTownParameter(townParams: readonly TownHomeParameter[], key: string): number {
+  const value = townParams.find((parameter) => parameter.key === key)?.value
+  return typeof value === 'number' && Number.isFinite(value) ? value : 0
+}
+
 export function TownHomeScreen({ duty, goals, townParams, totalScore, mikotoQuote, locale, onOpenGoyo }: TownHomeScreenProps) {
   const completedGoals = goals.filter((goal) => goal.done).length
+  // App passes these measured toGameResources() values through townParams.
+  const foodScore = measuredTownParameter(townParams, 'food-hall')
+  const runScore = measuredTownParameter(townParams, 'courier-flag')
 
   return (
     <main className="town-home" aria-labelledby="town-home-duty-title">
@@ -162,6 +171,8 @@ export function TownHomeScreen({ duty, goals, townParams, totalScore, mikotoQuot
         <img className="town-home__town-image" src="/assets/bg-town-night-street.png" alt={text(copy.townImage, locale)} />
         <p className="town-home__quote">{text(mikotoQuote, locale)}</p>
       </section>
+
+      <TownGrowth food={foodScore} run={runScore} total={totalScore} locale={locale} />
 
       <dl className="town-home__params" aria-label={locale === 'ja' ? '町の指標' : 'Town parameters'}>
         {townParams.map((parameter) => (
