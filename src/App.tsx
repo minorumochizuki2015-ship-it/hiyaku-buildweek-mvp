@@ -10,13 +10,18 @@ import {
   type MissionInput,
 } from '../shared/mockMission'
 import { MIKOTO } from '../shared/couriers'
+import { calculateActivityScores, runScore, toGameResources, totalScore } from '../shared/activity'
 import { distanceTargetMetres, rivalDistanceAtElapsedSeconds, type MovementMode, startWalkTracking } from './movement'
 import { checkpointRouteState } from './checkpointRoute'
 import { ArrivalSeal, buildSealSummary, formatSealDate, sealCanvasDataUrl, type ArrivalSealData } from './ArrivalSeal'
 import { NutritionFlow } from './nutrition/NutritionFlow'
+import { TownHomeScreen, type TownHomeGoal, type TownHomeParameter } from './screens/TownHomeScreen'
+import { WorkoutEntryScreen } from './screens/WorkoutEntryScreen'
+import { GoyoDetailScreen, type GoyoCheckpoint, type GoyoGoal, type GoyoTownEffect } from './screens/GoyoDetailScreen'
+import type { NutritionReport } from '../shared/nutrition'
 import { localizeContent, t, type Locale } from './i18n'
 
-type JourneyState = 'idle' | 'generating' | 'nutrition-before-journey' | 'ready' | 'active' | 'paused' | 'completing' | 'completed' | 'nutrition'
+type JourneyState = 'idle' | 'generating' | 'duty-issued' | 'nutrition-before-journey' | 'ready' | 'active' | 'paused' | 'completing' | 'completed' | 'nutrition'
 export type NavTab = 'town' | 'workout' | 'dispatch' | 'flags' | 'records'
 
 const NAV_ITEMS: ReadonlyArray<{ id: NavTab; icon: string; label: 'nav.town' | 'nav.workout' | 'nav.dispatch' | 'nav.flags' | 'nav.records' }> = [
@@ -150,6 +155,10 @@ export function ComingSoonScreen({ tab, locale, onReturnToDispatch }: { tab: Exc
       </section>
     </main>
   )
+}
+
+function TownEmptyState() {
+  return <main className="town-home" aria-label="—">—</main>
 }
 
 async function postApi<T>(path: string, body: MissionInput | CompletionSummary, validate: (value: unknown) => value is T): Promise<T> {
@@ -506,6 +515,8 @@ export default function App() {
   const [mission, setMission] = useState<Mission | null>(null)
   const [stats, setStats] = useState<JourneyStats>({ elapsedSeconds: 0, progress: 0, distanceMetres: 0 })
   const [completion, setCompletion] = useState<MissionCompletion | null>(null)
+  const [latestNutritionReport, setLatestNutritionReport] = useState<NutritionReport | null>(null)
+  const [missionCompletedThisSession, setMissionCompletedThisSession] = useState(false)
   const [targetDistanceMetres, setTargetDistanceMetres] = useState<number | null>(null)
   const [availableMinutes, setAvailableMinutes] = useState<AvailableMinutes>(10)
   const [movementMode, setMovementMode] = useState<MovementMode>('demo')
@@ -583,6 +594,7 @@ export default function App() {
       .then((result) => {
         if (cancelled) return
         setCompletion(result)
+        setMissionCompletedThisSession(true)
         setState('completed')
       })
       .catch(() => {
@@ -607,21 +619,107 @@ export default function App() {
       setMovementMode(selectedMovementMode)
       setLocationStatus('')
       setSelectedTab('dispatch')
-      setState(nutritionStateFor('dispatch'))
+      setState('duty-issued')
     } catch {
       setState('idle')
     }
   }
 
   const missionInProgress = state === 'ready' || state === 'active' || state === 'paused' || state === 'completing'
+  const townActivityScores = useMemo(() => {
+    const run = runScore({
+      distanceMetres: stats.distanceMetres,
+      targetDistanceMetres: targetDistanceMetres ?? 0,
+    })
+    const foodAndStrength = calculateActivityScores(latestNutritionReport?.foodScore ?? 0, null, null)
+    return { ...foodAndStrength, run }
+  }, [latestNutritionReport, stats.distanceMetres, targetDistanceMetres])
+  const currentTotalScore = totalScore(townActivityScores.food, townActivityScores.strength, townActivityScores.run)
+  const townResources = toGameResources(townActivityScores)
+  const mikotoQuote = { en: MIKOTO.normalQuote, ja: MIKOTO.normalQuote }
+  const townParams: TownHomeParameter[] = [
+    { key: 'vitality', label: { en: 'Town vitality', ja: '町の活気' }, value: currentTotalScore },
+    { key: 'food-hall', label: { en: 'Food hall', ja: '食堂' }, value: townResources.foodHallEnergy },
+    { key: 'courier-flag', label: { en: 'Courier flag power', ja: '飛脚旗の力' }, value: townResources.courierFlagPower },
+  ]
+  const goals: TownHomeGoal[] = [
+    {
+      key: 'carry-goyo',
+      label: { en: 'Carry the goyo', ja: '御用を運ぶ' },
+      current: missionCompletedThisSession ? 1 : 0,
+      target: 1,
+      done: missionCompletedThisSession,
+    },
+    {
+      key: 'log-meal',
+      label: { en: 'Log a meal', ja: '食事を記録する' },
+      current: latestNutritionReport ? 1 : 0,
+      target: 1,
+      done: latestNutritionReport !== null,
+    },
+  ]
+  const townDuty = activeMission && targetDistanceMetres !== null
+    ? {
+        name: { en: activeMission.title, ja: activeMission.title },
+        description: { en: activeMission.briefing, ja: activeMission.briefing },
+        distanceMetres: targetDistanceMetres,
+        estimatedMinutes: availableMinutes,
+        townEffects: [],
+      }
+    : null
+  const goyoDuty = townDuty
+    ? {
+        name: townDuty.name,
+        description: townDuty.description,
+        distance: { en: `${townDuty.distanceMetres} m`, ja: `${townDuty.distanceMetres}m` },
+        estimatedMinutes: { en: `${townDuty.estimatedMinutes} min`, ja: `${townDuty.estimatedMinutes}分` },
+        remainingDistance: { en: `${Math.max(0, townDuty.distanceMetres - Math.round(stats.distanceMetres))} m`, ja: `${Math.max(0, townDuty.distanceMetres - Math.round(stats.distanceMetres))}m` },
+      }
+    : null
+  const route = checkpointRouteState(stats.progress, targetDistanceMetres ?? 0)
+  const goyoCheckpoints: GoyoCheckpoint[] = route.waypoints.map((checkpoint) => ({
+    name: { en: checkpoint.name, ja: checkpoint.name },
+    isNext: route.nextCheckpoint?.name === checkpoint.name,
+  }))
+  const goyoGoals: GoyoGoal[] = goals.map((goal) => ({
+    icon: goal.key === 'carry-goyo' ? '📜' : '🍚',
+    label: goal.label,
+    current: goal.current,
+    target: goal.target,
+  }))
+  const goyoTownEffects: GoyoTownEffect[] = [
+    { icon: '🏯', label: townParams[0].label, magnitude: { en: String(townParams[0].value), ja: String(townParams[0].value) } },
+    { icon: '🍚', label: townParams[1].label, magnitude: { en: String(townParams[1].value), ja: String(townParams[1].value) } },
+    { icon: '🚩', label: townParams[2].label, magnitude: { en: String(townParams[2].value), ja: String(townParams[2].value) } },
+  ]
   let content: ReactNode
 
-  if (selectedTab !== 'dispatch') {
+  if (selectedTab === 'town') {
+    content = townDuty
+      ? <TownHomeScreen duty={townDuty} goals={goals} townParams={townParams} totalScore={currentTotalScore} mikotoQuote={mikotoQuote} locale={locale} onAcceptDuty={() => setSelectedTab('workout')} />
+      : <TownEmptyState />
+  } else if (selectedTab === 'workout') {
+    content = <WorkoutEntryScreen duty={null} onSubmit={generateMission} onBack={() => setSelectedTab('dispatch')} generating={state === 'generating'} locale={locale} />
+  } else if (selectedTab === 'flags' || selectedTab === 'records') {
     content = <ComingSoonScreen tab={selectedTab} locale={locale} onReturnToDispatch={() => setSelectedTab('dispatch')} />
-  } else if (state === 'idle' || state === 'generating') {
-    content = <DispatchScreen onGenerate={generateMission} generating={state === 'generating'} />
+  } else if (state === 'idle' || state === 'generating' || state === 'duty-issued') {
+    content = (
+      <>
+        <GoyoDetailScreen
+          duty={goyoDuty}
+          checkpoints={goyoCheckpoints}
+          goals={goyoGoals}
+          townEffects={goyoTownEffects}
+          mikotoQuote={goyoDuty ? mikotoQuote : null}
+          locale={locale}
+          onAccept={() => setState(nutritionStateFor('dispatch'))}
+          onBack={() => setSelectedTab('town')}
+        />
+        {!goyoDuty && <DispatchScreen onGenerate={generateMission} generating={state === 'generating'} />}
+      </>
+    )
   } else if (state === 'nutrition-before-journey') {
-    content = <NutritionFlow onBack={() => setState('idle')} backLabel="Dispatch" onContinue={() => setState('ready')} locale={locale} distanceMetres={undefined} elapsedSeconds={undefined} />
+    content = <NutritionFlow onBack={() => setState('idle')} backLabel="Dispatch" onContinue={() => setState('ready')} locale={locale} distanceMetres={undefined} elapsedSeconds={undefined} previousFoodScore={latestNutritionReport?.foodScore ?? 0} onReport={setLatestNutritionReport} />
   } else if (missionInProgress && activeMission) {
     content = <JourneyScreen mission={activeMission} state={state} stats={stats} targetDistanceMetres={targetDistanceMetres ?? 0} availableMinutes={availableMinutes} movementMode={movementMode} locationStatus={locationStatus} onPause={() => setState((current) => current === 'paused' ? 'active' : 'paused')} onEnd={() => {
       distanceMetresRef.current = targetDistanceMetres ?? 0
@@ -634,7 +732,7 @@ export default function App() {
       setState('idle')
     }} onNutrition={() => setState('nutrition')} />
   } else if (state === 'nutrition') {
-    content = <NutritionFlow onBack={() => setState('completed')} locale={locale} distanceMetres={stats.distanceMetres} elapsedSeconds={stats.elapsedSeconds} />
+    content = <NutritionFlow onBack={() => setState('completed')} locale={locale} distanceMetres={stats.distanceMetres} elapsedSeconds={stats.elapsedSeconds} previousFoodScore={latestNutritionReport?.foodScore ?? 0} onReport={setLatestNutritionReport} />
   } else {
     content = <DispatchScreen onGenerate={generateMission} generating={false} />
   }

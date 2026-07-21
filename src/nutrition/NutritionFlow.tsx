@@ -4,10 +4,12 @@ import {
   type NutritionReport,
   type NutritionStandard,
 } from '../../shared/nutrition'
+import { calculateActivityScores, toGameResources } from '../../shared/activity'
 import { GozenLedgerScreen } from './GozenLedgerScreen'
 import { NutrientCompareScreen } from './NutrientCompareScreen'
 import { TomorrowSuggestScreen } from './TomorrowSuggestScreen'
 import { TownDeliveryScreen } from './TownDeliveryScreen'
+import { AchievementScene, type AchievementDelta } from '../screens/AchievementScene'
 import './nutrition-flow.css'
 
 type Locale = 'en' | 'ja'
@@ -20,6 +22,8 @@ interface NutritionFlowProps {
   locale: Locale
   distanceMetres?: number
   elapsedSeconds?: number
+  previousFoodScore?: number
+  onReport?: (report: NutritionReport) => void
 }
 
 interface NutritionFlowState {
@@ -68,6 +72,22 @@ const flowLabels = {
   ja: { back: '戻る', next: '次へ', step: (step: FlowStep) => `${step}/4` },
 } as const
 
+export function achievementModeFor(report: NutritionReport): 'light' | 'video' {
+  return report.foodScore >= 60 && report.nutrients.some((nutrient) => nutrient.judgment === 'OK') ? 'video' : 'light'
+}
+
+export function foodHallDeltasForReport(report: NutritionReport, previousFoodScore: number, locale: Locale): AchievementDelta[] {
+  const previous = toGameResources(calculateActivityScores(previousFoodScore, null, null)).foodHallEnergy
+  const next = toGameResources(calculateActivityScores(report.foodScore, null, null)).foodHallEnergy
+  const delta = next - previous
+  if (!Number.isFinite(delta) || delta === 0) return []
+  return [{
+    key: 'food-hall-energy',
+    label: locale === 'ja' ? '食堂' : 'Food hall',
+    delta: delta > 0 ? `+${delta}` : String(delta),
+  }]
+}
+
 export function NutritionFlow({
   onBack,
   backLabel = 'Arrival',
@@ -75,12 +95,16 @@ export function NutritionFlow({
   locale,
   distanceMetres,
   elapsedSeconds,
+  previousFoodScore = 0,
+  onReport,
 }: NutritionFlowProps) {
   const [description, setDescription] = useState('')
   const [amountGrams, setAmountGrams] = useState(200)
   const [report, setReport] = useState<NutritionReport | null>(null)
   const [status, setStatus] = useState('')
   const [loading, setLoading] = useState(false)
+  const [reportBaselineFoodScore, setReportBaselineFoodScore] = useState(previousFoodScore)
+  const [achievementSeen, setAchievementSeen] = useState(false)
   const [flow, dispatch] = useReducer(nutritionFlowReducer, initialFlowState)
   const labels = flowLabels[locale]
 
@@ -92,7 +116,10 @@ export function NutritionFlow({
     setStatus('Looking up your meal…')
     try {
       const nextReport = await requestNutrition(meal, amountGrams)
+      setReportBaselineFoodScore(previousFoodScore)
       setReport(nextReport)
+      onReport?.(nextReport)
+      setAchievementSeen(false)
       dispatch({ type: 'reset' })
       setStatus('')
     } catch {
@@ -106,6 +133,7 @@ export function NutritionFlow({
     setReport(null)
     dispatch({ type: 'reset' })
     setStatus('')
+    setAchievementSeen(false)
   }
 
   if (!report) {
@@ -141,6 +169,9 @@ export function NutritionFlow({
     <TownDeliveryScreen key="town" report={report} locale={locale} />,
     <TomorrowSuggestScreen key="tomorrow" report={report} locale={locale} onRecordMeal={recordAnotherMeal} onViewGoyo={() => onContinue?.()} onBackToTown={onBack} />,
   ][flow.step - 1]
+  const achievement = flow.step === 3 && !achievementSeen
+    ? <AchievementScene mode={achievementModeFor(report)} deltas={foodHallDeltasForReport(report, reportBaselineFoodScore, locale)} locale={locale} onComplete={() => setAchievementSeen(true)} />
+    : null
 
   return (
     <section className="nutrition-flow" aria-label="Nutrition report flow">
@@ -154,6 +185,7 @@ export function NutritionFlow({
         </button>
       </nav>
       {screen}
+      {achievement}
     </section>
   )
 }

@@ -8,10 +8,34 @@ import { t, translateText, type Locale } from './i18n'
 import { mockCompleteMission, mockGenerateMission } from '../shared/mockMission'
 import { MIKOTO } from '../shared/couriers'
 import worker from '../worker/index'
+import { TownHomeScreen } from './screens/TownHomeScreen'
+import { WorkoutEntryScreen } from './screens/WorkoutEntryScreen'
+import { GoyoDetailScreen } from './screens/GoyoDetailScreen'
 
 const mission = mockGenerateMission({ availableMinutes: 10, energy: 'Steady', courierId: MIKOTO.id, displayName: 'Ada' })
 
 describe('HIKYAKU static screens', () => {
+  it('renders the implemented Town, Workout, and Goyo tab screens rather than the coming-soon screen', () => {
+    const town = renderToStaticMarkup(
+      <TownHomeScreen
+        duty={{ name: { en: mission.title, ja: mission.title }, description: { en: mission.briefing, ja: mission.briefing }, distanceMetres: 800, estimatedMinutes: 10, townEffects: [] }}
+        goals={[]}
+        townParams={[]}
+        totalScore={0}
+        mikotoQuote={{ en: MIKOTO.normalQuote, ja: MIKOTO.normalQuote }}
+        locale="en"
+        onAcceptDuty={() => undefined}
+      />,
+    )
+    const workout = renderToStaticMarkup(<WorkoutEntryScreen duty={null} onSubmit={() => undefined} onBack={() => undefined} generating={false} locale="en" />)
+    const goyo = renderToStaticMarkup(<GoyoDetailScreen duty={null} checkpoints={[]} goals={[]} townEffects={[]} mikotoQuote={null} locale="en" onAccept={() => undefined} onBack={() => undefined} />)
+
+    for (const screen of [town, workout, goyo]) expect(screen).not.toContain('placeholder-screen')
+    expect(town).toContain('town-home')
+    expect(workout).toContain('workout-entry-screen')
+    expect(goyo).toContain('goyo-detail')
+  })
+
   it('renders Dispatch and its primary action', () => {
     const screen = renderToStaticMarkup(<DispatchScreen onGenerate={() => undefined} generating={false} />)
     expect(screen).toContain('Accept Dispatch')
