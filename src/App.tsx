@@ -3,13 +3,14 @@ import {
   isMission,
   isMissionCompletion,
   type AvailableMinutes,
-  type CompletionSummary,
+  type CompletionRequest,
   type Energy,
   type Mission,
   type MissionCompletion,
   type MissionInput,
+  type MissionRequest,
 } from '../shared/mockMission'
-import { MIKOTO } from '../shared/couriers'
+import { MIKOTO, courierCopy } from '../shared/couriers'
 import { calculateActivityScores, runScore, toGameResources, totalScore } from '../shared/activity'
 import { distanceTargetMetres, rivalDistanceAtElapsedSeconds, type MovementMode, startWalkTracking } from './movement'
 import { checkpointRouteState } from './checkpointRoute'
@@ -192,7 +193,7 @@ export function ComingSoonScreen({ tab, locale, onReturnToDispatch }: { tab: Exc
   )
 }
 
-async function postApi<T>(path: string, body: MissionInput | CompletionSummary, validate: (value: unknown) => value is T): Promise<T> {
+async function postApi<T>(path: string, body: MissionRequest | CompletionRequest, validate: (value: unknown) => value is T): Promise<T> {
   const response = await fetch(path, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
@@ -261,11 +262,12 @@ export function CheckpointRoute({ progress, targetDistanceMetres }: { progress: 
   )
 }
 
-export function DispatchScreen({ onGenerate, generating }: { onGenerate: (input: MissionInput, movementMode: MovementMode) => void; generating: boolean }) {
+export function DispatchScreen({ locale, onGenerate, generating }: { locale: Locale; onGenerate: (input: MissionInput, movementMode: MovementMode) => void; generating: boolean }) {
   const [availableMinutes, setAvailableMinutes] = useState<AvailableMinutes>(10)
   const [energy, setEnergy] = useState<Energy>('Steady')
   const [displayName, setDisplayName] = useState('')
   const [movementMode, setMovementMode] = useState<MovementMode>('demo')
+  const courier = courierCopy(locale)
 
   return (
     <main className="screen dispatch-screen" aria-labelledby="dispatch-title">
@@ -278,7 +280,7 @@ export function DispatchScreen({ onGenerate, generating }: { onGenerate: (input:
       </header>
 
       <section className="dispatch-hero" aria-label="Edo courier introduction">
-        <img src="/assets/dispatch-hero-v3b.png" alt="東雲ミコト, the Edo courier, on a moonlit river bridge" />
+        <img src="/assets/dispatch-hero-v3b.png" alt={`${courier.gameName}, the Edo courier, on a moonlit river bridge`} />
         <div className="dispatch-hero-copy">
           <span className="seal">DEMO<br />EDO</span>
           <p>You are an Edo hikyaku (courier). Accept a dispatch, carry it, arrive.</p>
@@ -308,10 +310,10 @@ export function DispatchScreen({ onGenerate, generating }: { onGenerate: (input:
           <legend>Courier on duty</legend>
           <div className="courier-picker" aria-label="Fixed courier identity">
             <div className="courier-card" style={{ flex: '1 1 auto' }}>
-              <strong>{MIKOTO.gameName}</strong>
-              <small>{MIKOTO.titleEn} · {MIKOTO.attributes}</small>
-              <em>{MIKOTO.role} · {MIKOTO.base}</em>
-              <i>{MIKOTO.normalQuote}</i>
+              <strong>{courier.gameName}</strong>
+              <small>{courier.title} · {courier.attributes}</small>
+              <em>{courier.role} · {courier.base}</em>
+              <i>{courier.normalQuote}</i>
             </div>
           </div>
         </fieldset>
@@ -382,7 +384,7 @@ export interface GoyoTabContentProps {
 
 /** The Goyo tab is either the duty detail or its creation form, never both. */
 export function GoyoTabContent({ duty, checkpoints, goals, townEffects, mikotoQuote, locale, onAccept, onBack, onGenerate, generating }: GoyoTabContentProps) {
-  if (!duty) return <DispatchScreen onGenerate={onGenerate} generating={generating} />
+  if (!duty) return <DispatchScreen locale={locale} onGenerate={onGenerate} generating={generating} />
 
   return (
     <GoyoDetailScreen
@@ -398,8 +400,9 @@ export function GoyoTabContent({ duty, checkpoints, goals, townEffects, mikotoQu
   )
 }
 
-export function JourneyScreen({ mission, state, stats, targetDistanceMetres, availableMinutes, movementMode, locationStatus, onPause, onEnd }: {
+export function JourneyScreen({ mission, locale, state, stats, targetDistanceMetres, availableMinutes, movementMode, locationStatus, onPause, onEnd }: {
   mission: Mission
+  locale: Locale
   state: JourneyScreenState
   stats: JourneyStats
   targetDistanceMetres: number
@@ -414,6 +417,7 @@ export function JourneyScreen({ mission, state, stats, targetDistanceMetres, ava
   const progressLabel = state === 'ready' ? 'Mission ready' : state === 'paused' ? 'Journey paused' : state === 'completing' ? 'Writing arrival…' : movementMode === 'walk' ? 'Real Walk' : 'Judge Demo'
   const ringRadius = 84
   const ringCircumference = 2 * Math.PI * ringRadius
+  const courier = courierCopy(locale)
 
   return (
     <main className="screen journey-screen" aria-labelledby="journey-title">
@@ -421,7 +425,7 @@ export function JourneyScreen({ mission, state, stats, targetDistanceMetres, ava
         <div>
           <p className="eyebrow">{progressLabel}</p>
           <h1 id="journey-title">{mission.title}</h1>
-          <p className="courier-leading">率いる飛脚: {MIKOTO.gameName} — {MIKOTO.title}</p>
+          <p className="courier-leading">{locale === 'en' ? 'Lead courier' : '率いる飛脚'}: {courier.gameName} — {courier.title}</p>
         </div>
         <span className="demo-badge">{movementMode === 'walk' ? 'REAL WALK' : 'JUDGE DEMO'}</span>
       </header>
@@ -454,7 +458,7 @@ export function JourneyScreen({ mission, state, stats, targetDistanceMetres, ava
         {locationStatus && <p className="location-status">{locationStatus}</p>}
       </section>
 
-      <p className="empowered-line">{MIKOTO.missionStartQuote}</p>
+      <p className="empowered-line">{courier.missionStartQuote}</p>
 
       <section className="journey-detail" aria-label="Journey metrics">
         <span><strong>{formatDuration(stats.elapsedSeconds)}</strong> elapsed</span>
@@ -476,9 +480,10 @@ export function JourneyScreen({ mission, state, stats, targetDistanceMetres, ava
   )
 }
 
-export function ArrivalScreen({ mission, completion, stats, targetDistanceMetres, availableMinutes, onRestart, onNutrition }: {
+export function ArrivalScreen({ mission, completion, locale, stats, targetDistanceMetres, availableMinutes, onRestart, onNutrition }: {
   mission: Mission
   completion: MissionCompletion
+  locale: Locale
   stats: JourneyStats
   targetDistanceMetres: number
   availableMinutes: AvailableMinutes
@@ -489,6 +494,7 @@ export function ArrivalScreen({ mission, completion, stats, targetDistanceMetres
   const rivalDistance = rivalDistanceAtElapsedSeconds(targetDistanceMetres, availableMinutes, mission.title, stats.elapsedSeconds)
   const [shareStatus, setShareStatus] = useState('')
   const [mealOpen, setMealOpen] = useState(false)
+  const courier = courierCopy(locale)
   const sealData: ArrivalSealData = {
     missionTitle: mission.title,
     rank: completion.rank,
@@ -553,7 +559,7 @@ export function ArrivalScreen({ mission, completion, stats, targetDistanceMetres
       <section className="epilogue">
         <p>{completion.epilogue}</p>
         <p className="rival-arrival-summary">{arrivalRivalSummary(stats.distanceMetres, rivalDistance)}</p>
-        <p className="historical-note"><strong>{MIKOTO.gameName}:</strong> {MIKOTO.missionCompleteQuote}</p>
+        <p className="historical-note"><strong>{courier.gameName}:</strong> {courier.missionCompleteQuote}</p>
         <p className="next-mission">Next dispatch: {completion.nextMissionTeaser}</p>
       </section>
       <button className="meal-button" type="button" onClick={() => setMealOpen(true)}>
@@ -656,12 +662,13 @@ export default function App() {
   useEffect(() => {
     if (state !== 'completing' || !mission || targetDistanceMetres === null) return
     let cancelled = false
-    const summary: CompletionSummary = {
+    const summary = {
       distanceMeters: targetDistanceMetres,
       durationSeconds: stats.elapsedSeconds,
       completionPercent: 100,
       missionTitle: mission.title,
       courierId: mission.courierId,
+      locale: mission.locale,
     }
     void postApi('/api/complete', summary, isMissionCompletion)
       .then((result) => {
@@ -682,7 +689,7 @@ export default function App() {
   const generateMission = async (input: MissionInput, selectedMovementMode: MovementMode) => {
     setState('generating')
     try {
-      const generatedMission = await postApi('/api/mission', input, isMission)
+      const generatedMission = await postApi('/api/mission', { ...input, locale }, isMission)
       setMission(generatedMission)
       distanceMetresRef.current = 0
       setStats({ elapsedSeconds: 0, progress: 0, distanceMetres: 0 })
@@ -709,7 +716,7 @@ export default function App() {
   }, [latestNutritionReport, stats.distanceMetres, targetDistanceMetres])
   const currentTotalScore = totalScore(townActivityScores.food, townActivityScores.strength, townActivityScores.run)
   const townResources = toGameResources(townActivityScores)
-  const mikotoQuote = { en: MIKOTO.normalQuote, ja: MIKOTO.normalQuote }
+  const mikotoQuote = { en: courierCopy('en').normalQuote, ja: courierCopy('ja').normalQuote }
   const townParams: TownHomeParameter[] = [
     { key: 'vitality', label: { en: 'Town vitality', ja: '町の活気' }, value: currentTotalScore },
     { key: 'food-hall', label: { en: 'Food hall', ja: '食堂' }, value: townResources.foodHallEnergy },
@@ -773,13 +780,13 @@ export default function App() {
   } else if (journeyPresentation === 'nutrition-before-journey') {
     content = <NutritionFlow onBack={() => setState('idle')} backLabel="Dispatch" onContinue={() => setState('ready')} locale={locale} distanceMetres={undefined} elapsedSeconds={undefined} previousFoodScore={latestNutritionReport?.foodScore ?? 0} onReport={setLatestNutritionReport} />
   } else if (journeyPresentation === 'journey' && isJourneyScreenState(state) && activeMission) {
-    content = <JourneyScreen mission={activeMission} state={state} stats={stats} targetDistanceMetres={targetDistanceMetres ?? 0} availableMinutes={availableMinutes} movementMode={movementMode} locationStatus={locationStatus} onPause={() => setState((current) => current === 'paused' ? 'active' : 'paused')} onEnd={() => {
+    content = <JourneyScreen mission={activeMission} locale={locale} state={state} stats={stats} targetDistanceMetres={targetDistanceMetres ?? 0} availableMinutes={availableMinutes} movementMode={movementMode} locationStatus={locationStatus} onPause={() => setState((current) => current === 'paused' ? 'active' : 'paused')} onEnd={() => {
       distanceMetresRef.current = targetDistanceMetres ?? 0
       setStats((current) => ({ ...current, progress: 100, distanceMetres: targetDistanceMetres ?? current.distanceMetres }))
       setState('completing')
     }} />
   } else if (journeyPresentation === 'arrival' && activeMission && completion) {
-    content = <ArrivalScreen mission={activeMission} completion={completion} stats={stats} targetDistanceMetres={targetDistanceMetres ?? 0} availableMinutes={availableMinutes} onRestart={() => {
+    content = <ArrivalScreen mission={activeMission} completion={completion} locale={locale} stats={stats} targetDistanceMetres={targetDistanceMetres ?? 0} availableMinutes={availableMinutes} onRestart={() => {
       setSelectedTab('dispatch')
       setState('idle')
     }} onNutrition={() => setState('nutrition')} />

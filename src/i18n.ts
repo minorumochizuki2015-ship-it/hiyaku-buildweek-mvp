@@ -50,6 +50,8 @@ const UI_COPY: Record<Locale, Record<TranslationKey, string>> = {
  * can localize the existing frozen screen components without changing them.
  */
 const JA_TEXT: Record<string, string> = {
+  'Shinonome Mikoto': '東雲ミコト',
+  'Violet Lightning': '紫電',
   'HIKYAKU / EDO COURIER': '飛脚 HIKYAKU / 江戸の配達人',
   EDO: '江戸',
   'Turn a short walk into an Edo courier mission.': '短い散歩を、江戸の飛脚任務に変えよう。',

@@ -13,7 +13,7 @@ import { TownHomeScreen } from './screens/TownHomeScreen'
 import { WorkoutEntryScreen } from './screens/WorkoutEntryScreen'
 import { GoyoDetailScreen } from './screens/GoyoDetailScreen'
 
-const mission = mockGenerateMission({ availableMinutes: 10, energy: 'Steady', courierId: MIKOTO.id, displayName: 'Ada' })
+const mission = mockGenerateMission({ availableMinutes: 10, energy: 'Steady', courierId: MIKOTO.id, displayName: 'Ada' }, 'en')
 
 describe('HIKYAKU static screens', () => {
   it('renders the implemented Town, Workout, and Goyo tab screens rather than the coming-soon screen', () => {
@@ -38,7 +38,7 @@ describe('HIKYAKU static screens', () => {
   })
 
   it('renders Dispatch and its primary action', () => {
-    const screen = renderToStaticMarkup(<DispatchScreen onGenerate={() => undefined} generating={false} />)
+    const screen = renderToStaticMarkup(<DispatchScreen locale="en" onGenerate={() => undefined} generating={false} />)
     expect(screen).toContain('Accept Dispatch')
     expect(screen).toContain('Turn a short walk into an Edo courier mission.')
     expect(screen).toContain('You are an Edo hikyaku (courier). Accept a dispatch, carry it, arrive.')
@@ -48,10 +48,10 @@ describe('HIKYAKU static screens', () => {
     expect(screen).toContain('Real Walk: your location stays on your device.')
     expect(screen).toContain('/assets/dispatch-hero-v3b.png')
     expect(screen).toContain('Courier on duty')
-    expect(screen).toContain(MIKOTO.gameName)
+    expect(screen).toContain(MIKOTO.gameNameEn)
     expect(screen).toContain(MIKOTO.titleEn)
-    expect(screen).toContain(MIKOTO.role)
-    expect(screen).toContain(MIKOTO.normalQuote)
+    expect(screen).toContain(MIKOTO.roleEn)
+    expect(screen).toContain(MIKOTO.normalQuoteEn)
     expect(screen).not.toContain('星図ノ測姫・忠敬')
   })
 
@@ -84,20 +84,20 @@ describe('HIKYAKU static screens', () => {
   })
 
   it('renders Journey and its primary action', () => {
-    const screen = renderToStaticMarkup(<JourneyScreen mission={mission} state="active" stats={{ elapsedSeconds: 20, progress: 50, distanceMetres: 400 }} targetDistanceMetres={800} availableMinutes={10} movementMode="demo" locationStatus="" onPause={() => undefined} onEnd={() => undefined} />)
+    const screen = renderToStaticMarkup(<JourneyScreen mission={mission} locale="en" state="active" stats={{ elapsedSeconds: 20, progress: 50, distanceMetres: 400 }} targetDistanceMetres={800} availableMinutes={10} movementMode="demo" locationStatus="" onPause={() => undefined} onEnd={() => undefined} />)
     expect(screen).toContain('End Mission')
     expect(screen).toContain('Judge Demo')
     expect(screen).toContain('JUDGE DEMO')
     expect(screen).toContain('50% along the route')
     expect(screen).toContain('AI PACER · SIMULATED')
     expect(screen).toContain('Yuzu')
-    expect(screen).toContain(`率いる飛脚: ${MIKOTO.gameName} — ${MIKOTO.title}`)
-    expect(screen).toContain(MIKOTO.missionStartQuote)
+    expect(screen).toContain(`Lead courier: ${MIKOTO.gameNameEn} — ${MIKOTO.titleEn}`)
+    expect(screen).toContain(MIKOTO.missionStartQuoteEn)
   })
 
   it('renders Arrival and its primary action', () => {
-    const completion = mockCompleteMission({ distanceMeters: 480, durationSeconds: 100, completionPercent: 100, missionTitle: mission.title, courierId: mission.courierId })
-    const screen = renderToStaticMarkup(<ArrivalScreen mission={mission} completion={completion} stats={{ elapsedSeconds: 100, progress: 100, distanceMetres: 480 }} targetDistanceMetres={480} availableMinutes={10} onRestart={() => undefined} />)
+    const completion = mockCompleteMission({ distanceMeters: 480, durationSeconds: 100, completionPercent: 100, missionTitle: mission.title, courierId: mission.courierId }, 'en')
+    const screen = renderToStaticMarkup(<ArrivalScreen mission={mission} completion={completion} locale="en" stats={{ elapsedSeconds: 100, progress: 100, distanceMetres: 480 }} targetDistanceMetres={480} availableMinutes={10} onRestart={() => undefined} />)
     expect(screen).toContain('Start Another Mission')
     expect(screen).toContain(completion.rank)
     expect(screen).toContain('/assets/arrival-honjin-goze.mp4')
@@ -107,13 +107,13 @@ describe('HIKYAKU static screens', () => {
     expect(screen).toContain('Share Seal')
     expect(screen).toContain('carried for Shinonome Mikoto')
     expect(screen).toContain(MIKOTO.crestName)
-    expect(screen).toContain(MIKOTO.missionCompleteQuote)
+    expect(screen).toContain(MIKOTO.missionCompleteQuoteEn)
     expect(screen).not.toContain('meal-reward-kanto.mp4')
   })
 
   it('keeps the existing Arrival-to-Nutrition route available', () => {
-    const completion = mockCompleteMission({ distanceMeters: 480, durationSeconds: 100, completionPercent: 100, missionTitle: mission.title, courierId: mission.courierId })
-    const screen = renderToStaticMarkup(<ArrivalScreen mission={mission} completion={completion} stats={{ elapsedSeconds: 100, progress: 100, distanceMetres: 480 }} targetDistanceMetres={480} availableMinutes={10} onRestart={() => undefined} onNutrition={() => undefined} />)
+    const completion = mockCompleteMission({ distanceMeters: 480, durationSeconds: 100, completionPercent: 100, missionTitle: mission.title, courierId: mission.courierId }, 'en')
+    const screen = renderToStaticMarkup(<ArrivalScreen mission={mission} completion={completion} locale="en" stats={{ elapsedSeconds: 100, progress: 100, distanceMetres: 480 }} targetDistanceMetres={480} availableMinutes={10} onRestart={() => undefined} onNutrition={() => undefined} />)
 
     expect(nutritionStateFor('arrival')).toBe('nutrition')
     expect(screen).toContain('食の帳簿')
@@ -168,11 +168,13 @@ describe('NAVSHELL1', () => {
 
     expect(locale).toBe('ja')
     expect(translateText('Accept Dispatch', locale)).toBe('任務を受ける')
+    expect(translateText('東雲ミコト', 'en')).toBe('Shinonome Mikoto')
+    expect(translateText('Shinonome Mikoto', 'ja')).toBe('東雲ミコト')
   })
 
   it('keeps the Goyo → Accept transition on the existing Journey renderer', () => {
     const screen = renderToStaticMarkup(
-      <JourneyScreen mission={mission} state={journeyStateAfterGoyoAccept()} stats={{ elapsedSeconds: 0, progress: 0, distanceMetres: 0 }} targetDistanceMetres={800} availableMinutes={10} movementMode="demo" locationStatus="" onPause={() => undefined} onEnd={() => undefined} />,
+      <JourneyScreen mission={mission} locale="en" state={journeyStateAfterGoyoAccept()} stats={{ elapsedSeconds: 0, progress: 0, distanceMetres: 0 }} targetDistanceMetres={800} availableMinutes={10} movementMode="demo" locationStatus="" onPause={() => undefined} onEnd={() => undefined} />,
     )
 
     expect(journeyStateAfterGoyoAccept()).toBe('ready')
@@ -197,7 +199,7 @@ describe('core journey render precedence', () => {
     const returnToTown = () => { selectedTab = 'town' }
     const endMission = () => { state = 'completing' }
     const receiveCompletion = () => {
-      completion = mockCompleteMission({ distanceMeters: 800, durationSeconds: 100, completionPercent: 100, missionTitle: mission.title, courierId: mission.courierId })
+      completion = mockCompleteMission({ distanceMeters: 800, durationSeconds: 100, completionPercent: 100, missionTitle: mission.title, courierId: mission.courierId }, 'en')
       state = 'completed'
     }
     const openNutrition = () => { state = 'nutrition' }
@@ -205,10 +207,10 @@ describe('core journey render precedence', () => {
     const renderCurrentScreen = (): string => {
       const presentation = journeyPresentationFor(state)
       if (presentation === 'journey' && isJourneyScreenState(state) && issuedMission) {
-        return renderToStaticMarkup(<JourneyScreen mission={issuedMission} state={state} stats={stats} targetDistanceMetres={800} availableMinutes={10} movementMode="demo" locationStatus="" onPause={() => undefined} onEnd={endMission} />)
+        return renderToStaticMarkup(<JourneyScreen mission={issuedMission} locale="en" state={state} stats={stats} targetDistanceMetres={800} availableMinutes={10} movementMode="demo" locationStatus="" onPause={() => undefined} onEnd={endMission} />)
       }
       if (presentation === 'arrival' && issuedMission && completion) {
-        return renderToStaticMarkup(<ArrivalScreen mission={issuedMission} completion={completion} stats={stats} targetDistanceMetres={800} availableMinutes={10} onRestart={() => undefined} onNutrition={openNutrition} />)
+        return renderToStaticMarkup(<ArrivalScreen mission={issuedMission} completion={completion} locale="en" stats={stats} targetDistanceMetres={800} availableMinutes={10} onRestart={() => undefined} onNutrition={openNutrition} />)
       }
       if (presentation === 'nutrition') {
         return renderToStaticMarkup(<NutritionFlow onBack={() => undefined} locale="en" distanceMetres={stats.distanceMetres} elapsedSeconds={stats.elapsedSeconds} />)
@@ -332,9 +334,9 @@ describe('arrival seal serialization', () => {
 describe('curated courier missions', () => {
   it('keeps every mission input on the fixed Mikoto identity', () => {
     const missions = [
-      mockGenerateMission({ availableMinutes: 5, energy: 'Low', courierId: MIKOTO.id, displayName: 'Ada' }),
-      mockGenerateMission({ availableMinutes: 10, energy: 'Steady', courierId: MIKOTO.id, displayName: 'Ada' }),
-      mockGenerateMission({ availableMinutes: 15, energy: 'Ready', courierId: MIKOTO.id, displayName: 'Ada' }),
+      mockGenerateMission({ availableMinutes: 5, energy: 'Low', courierId: MIKOTO.id, displayName: 'Ada' }, 'ja'),
+      mockGenerateMission({ availableMinutes: 10, energy: 'Steady', courierId: MIKOTO.id, displayName: 'Ada' }, 'ja'),
+      mockGenerateMission({ availableMinutes: 15, energy: 'Ready', courierId: MIKOTO.id, displayName: 'Ada' }, 'ja'),
     ]
 
     expect(missions.map((generated) => generated.courierId)).toEqual([MIKOTO.id, MIKOTO.id, MIKOTO.id])
@@ -343,7 +345,7 @@ describe('curated courier missions', () => {
   })
 
   it('returns a Mikoto-only deterministic Worker fallback when OpenAI is unavailable', async () => {
-    const input = { availableMinutes: 5, energy: 'Steady', courierId: MIKOTO.id }
+    const input = { availableMinutes: 5, energy: 'Steady', courierId: MIKOTO.id, locale: 'en' }
     const response = await worker.fetch(new Request('https://hiyaku.test/api/mission', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
@@ -353,9 +355,49 @@ describe('curated courier missions', () => {
 
     expect(response.status).toBe(200)
     expect(fallback.courierId).toBe(MIKOTO.id)
-    expect(fallback.historicalNote).toBe(MIKOTO.missionStartQuote)
-    expect(fallback.title).toContain(MIKOTO.gameName)
-    expect(fallback.briefing).toContain(MIKOTO.missionStartQuote)
+    expect(fallback.historicalNote).toBe(MIKOTO.missionStartQuoteEn)
+    expect(fallback.title).toContain(MIKOTO.gameNameEn)
+    expect(fallback.briefing).toContain(MIKOTO.missionStartQuoteEn)
+  })
+
+  it('rejects mission requests without an explicit locale', async () => {
+    const response = await worker.fetch(new Request('https://hiyaku.test/api/mission', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ availableMinutes: 5, energy: 'Steady', courierId: MIKOTO.id }),
+    }), {})
+
+    expect(response.status).toBe(400)
+  })
+
+  it('keeps every generated narrative field in the requested script', () => {
+    const cjkCharacters = /[\u3040-\u30ff\u3400-\u9fff\uf900-\ufaff]/u
+    const latinCharacters = /[A-Za-z]/u
+    const input = { availableMinutes: 10 as const, energy: 'Steady' as const, courierId: MIKOTO.id }
+    const englishMission = mockGenerateMission(input, 'en')
+    const japaneseMission = mockGenerateMission(input, 'ja')
+    const englishCompletion = mockCompleteMission({ distanceMeters: 800, durationSeconds: 600, completionPercent: 100, missionTitle: englishMission.title, courierId: MIKOTO.id }, 'en')
+    const japaneseCompletion = mockCompleteMission({ distanceMeters: 800, durationSeconds: 600, completionPercent: 100, missionTitle: japaneseMission.title, courierId: MIKOTO.id }, 'ja')
+    const narrativeFields = (generated: typeof englishMission, completion: typeof englishCompletion) => [
+      generated.title,
+      generated.briefing,
+      generated.milestones[25],
+      generated.milestones[50],
+      generated.milestones[75],
+      generated.historicalNote,
+      generated.completionStyle,
+      completion.rank,
+      completion.epilogue,
+      completion.nextMissionTeaser,
+    ]
+
+    for (const text of narrativeFields(englishMission, englishCompletion)) expect(text).not.toMatch(cjkCharacters)
+    for (const text of narrativeFields(japaneseMission, japaneseCompletion)) {
+      expect(text).toMatch(cjkCharacters)
+      expect(text).not.toMatch(latinCharacters)
+    }
+    expect(japaneseMission.briefing).toContain(MIKOTO.missionStartQuote)
+    expect(japaneseCompletion.epilogue).toContain(MIKOTO.missionCompleteQuote)
   })
 })
 

@@ -1,12 +1,13 @@
 import {
-  isCompletionSummary,
-  isMissionInput,
+  isCompletionRequest,
+  isMissionRequest,
   mockCompleteMission,
   mockGenerateMission,
-  type CompletionSummary,
-  type MissionInput,
+  type CompletionRequest,
+  type MissionRequest,
+  type NarrativeLocale,
 } from '../shared/mockMission'
-import { COURIERS } from '../shared/couriers'
+import { COURIERS, courierCopy } from '../shared/couriers'
 import { isNutritionRequest } from '../shared/nutrition'
 import { buildNutritionReport } from './nutrition'
 
@@ -71,6 +72,30 @@ function isNarrativeCompletion(value: unknown): value is NarrativeCompletion {
   if (!value || typeof value !== 'object') return false
   const completion = value as Record<string, unknown>
   return isNonEmptyString(completion.epilogue) && isNonEmptyString(completion.nextMissionTeaser)
+}
+
+const cjkCharacters = /[\u3040-\u30ff\u3400-\u9fff\uf900-\ufaff]/u
+const latinCharacters = /[A-Za-z]/u
+
+function textMatchesLocale(text: string, locale: NarrativeLocale): boolean {
+  return locale === 'en'
+    ? !cjkCharacters.test(text)
+    : cjkCharacters.test(text) && !latinCharacters.test(text)
+}
+
+function narrativeMissionMatchesLocale(value: NarrativeMission, locale: NarrativeLocale): boolean {
+  return [
+    value.title,
+    value.briefing,
+    value.milestones[25],
+    value.milestones[50],
+    value.milestones[75],
+    value.completionStyle,
+  ].every((text) => textMatchesLocale(text, locale))
+}
+
+function narrativeCompletionMatchesLocale(value: NarrativeCompletion, locale: NarrativeLocale): boolean {
+  return [value.epilogue, value.nextMissionTeaser].every((text) => textMatchesLocale(text, locale))
 }
 
 function chatContent(value: unknown): string | null {
@@ -143,22 +168,29 @@ const completionSchema = {
   },
 }
 
-function courierFor(courierId: MissionInput['courierId']) {
+function courierFor(courierId: MissionRequest['courierId']) {
   return COURIERS.find((courier) => courier.id === courierId)!
 }
 
-function missionRequest(input: MissionInput): unknown {
+function languageInstruction(locale: NarrativeLocale): string {
+  return locale === 'en'
+    ? 'Write every narrative field entirely in natural English. Do not use Japanese characters, Japanese words, or Japanese punctuation.'
+    : '各ナラティブ項目は自然な日本語だけで書いてください。英語の語句やローマ字を混ぜないでください。'
+}
+
+function missionRequest(input: MissionRequest): unknown {
   const courier = courierFor(input.courierId)
+  const persona = courierCopy(input.locale, courier)
   return {
     model: openAiModel,
     messages: [
       {
         role: 'system',
-        content: 'You write concise, warm fictional Edo courier mission narrative. Return only JSON matching the supplied schema. Write in the selected courier’s fantasy persona and voice. Use the supplied class and landmark as fictional setting texture. Do not state, imply, or invent historical facts, dates, achievements, biographies, or a historicalNote field; the app owns all history.',
+        content: `You write concise, warm fictional Edo courier mission narrative. Return only JSON matching the supplied schema. ${languageInstruction(input.locale)} Write in the selected courier’s fantasy persona and voice. Use the supplied class and landmark as fictional setting texture. Do not state, imply, or invent historical facts, dates, achievements, biographies, or a historicalNote field; the app owns all history.`,
       },
       {
         role: 'user',
-        content: `Create a mission for this app-decided input: ${JSON.stringify(input)}. Courier persona: ${JSON.stringify({ gameName: courier.gameName, figure: courier.figure, class: courier.class, classEn: courier.classEn, attribute: courier.attribute, landmark: courier.landmark, empoweredBy: courier.empoweredBy })}. Tailor tone and effort to availableMinutes and energy. The optional displayName may be used naturally. Provide a title, a briefing, encouragement for progress at 25%, 50%, and 75%, and a completionStyle. Keep every field short and concrete.`,
+        content: `Create a mission for this app-decided input: ${JSON.stringify(input)}. Courier persona: ${JSON.stringify(persona)}. Tailor tone and effort to availableMinutes and energy. The optional displayName may be used naturally. Provide a title, a briefing, encouragement for progress at 25%, 50%, and 75%, and a completionStyle. Keep every field short and concrete.`,
       },
     ],
     response_format: {
@@ -168,18 +200,19 @@ function missionRequest(input: MissionInput): unknown {
   }
 }
 
-function completionRequest(summary: CompletionSummary, rank: string): unknown {
+function completionRequest(summary: CompletionRequest, rank: string): unknown {
   const courier = courierFor(summary.courierId)
+  const persona = courierCopy(summary.locale, courier)
   return {
     model: openAiModel,
     messages: [
       {
         role: 'system',
-        content: 'You write concise, warm fictional Edo courier arrival narrative. Return only JSON matching the supplied schema. Write in the selected courier’s fantasy persona and voice. The app has already decided completion and rank; do not change or evaluate them. Do not state, imply, or invent historical facts, dates, achievements, or biographies.',
+        content: `You write concise, warm fictional Edo courier arrival narrative. Return only JSON matching the supplied schema. ${languageInstruction(summary.locale)} Write in the selected courier’s fantasy persona and voice. The app has already decided completion and rank; do not change or evaluate them. Do not state, imply, or invent historical facts, dates, achievements, or biographies.`,
       },
       {
         role: 'user',
-        content: `Write an arrival epilogue and a next-mission teaser for this completed courier run: ${JSON.stringify({ ...summary, rank })}. Courier persona: ${JSON.stringify({ gameName: courier.gameName, figure: courier.figure, class: courier.class, classEn: courier.classEn, attribute: courier.attribute, landmark: courier.landmark })}. Explicitly weave the missionTitle and rounded distance in metres into the epilogue.`,
+        content: `Write an arrival epilogue and a next-mission teaser for this completed courier run: ${JSON.stringify({ ...summary, rank })}. Courier persona: ${JSON.stringify(persona)}. Explicitly weave the missionTitle and rounded distance in metres into the epilogue.`,
       },
     ],
     response_format: {
@@ -203,19 +236,19 @@ export default {
       return json(await buildNutritionReport(body, env))
     }
     if (url.pathname === '/api/mission') {
-      if (!isMissionInput(body)) {
-        return json({ error: 'Invalid mission input. Expected availableMinutes (5, 10, or 15), energy, courierId, and optional displayName.' }, 400)
+      if (!isMissionRequest(body)) {
+        return json({ error: 'Invalid mission input. Expected availableMinutes (5, 10, or 15), energy, courierId, locale (en or ja), and optional displayName.' }, 400)
       }
-      const fallback = mockGenerateMission(body)
-      const narrative = await callOpenAi(env, missionRequest(body), isNarrativeMission)
-      return json(narrative ? { ...narrative, courierId: body.courierId, historicalNote: fallback.historicalNote } : fallback)
+      const fallback = mockGenerateMission(body, body.locale)
+      const narrative = await callOpenAi(env, missionRequest(body), (value): value is NarrativeMission => isNarrativeMission(value) && narrativeMissionMatchesLocale(value, body.locale))
+      return json(narrative ? { ...narrative, courierId: body.courierId, locale: body.locale, historicalNote: fallback.historicalNote } : fallback)
     }
     if (url.pathname === '/api/complete') {
-      if (!isCompletionSummary(body)) {
-        return json({ error: 'Invalid completion summary. Expected numeric distanceMeters, durationSeconds, completionPercent, string missionTitle, and courierId.' }, 400)
+      if (!isCompletionRequest(body)) {
+        return json({ error: 'Invalid completion summary. Expected numeric distanceMeters, durationSeconds, completionPercent, string missionTitle, courierId, and locale (en or ja).' }, 400)
       }
-      const fallback = mockCompleteMission(body)
-      const narrative = await callOpenAi(env, completionRequest(body, fallback.rank), isNarrativeCompletion)
+      const fallback = mockCompleteMission(body, body.locale)
+      const narrative = await callOpenAi(env, completionRequest(body, fallback.rank), (value): value is NarrativeCompletion => isNarrativeCompletion(value) && narrativeCompletionMatchesLocale(value, body.locale))
       return json(narrative ? { ...narrative, rank: fallback.rank } : fallback)
     }
     return json({ error: 'Not found.' }, 404)
