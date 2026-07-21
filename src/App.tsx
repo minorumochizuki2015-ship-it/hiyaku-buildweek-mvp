@@ -589,7 +589,7 @@ export default function App() {
   } else if (state === 'idle' || state === 'generating') {
     content = <DispatchScreen onGenerate={generateMission} generating={state === 'generating'} />
   } else if (state === 'nutrition-before-journey') {
-    content = <NutritionFlow onBack={() => setState('idle')} backLabel="Dispatch" onContinue={() => setState('ready')} locale={locale} />
+    content = <NutritionFlow onBack={() => setState('idle')} backLabel="Dispatch" onContinue={() => setState('ready')} locale={locale} distanceMetres={undefined} elapsedSeconds={undefined} />
   } else if (missionInProgress && activeMission) {
     content = <JourneyScreen mission={activeMission} state={state} stats={stats} targetDistanceMetres={targetDistanceMetres ?? 0} availableMinutes={availableMinutes} movementMode={movementMode} locationStatus={locationStatus} onPause={() => setState((current) => current === 'paused' ? 'active' : 'paused')} onEnd={() => {
       distanceMetresRef.current = targetDistanceMetres ?? 0
@@ -602,7 +602,7 @@ export default function App() {
       setState('idle')
     }} onNutrition={() => setState('nutrition')} />
   } else if (state === 'nutrition') {
-    content = <NutritionFlow onBack={() => setState('completed')} locale={locale} />
+    content = <NutritionFlow onBack={() => setState('completed')} locale={locale} distanceMetres={stats.distanceMetres} elapsedSeconds={stats.elapsedSeconds} />
   } else {
     content = <DispatchScreen onGenerate={generateMission} generating={false} />
   }

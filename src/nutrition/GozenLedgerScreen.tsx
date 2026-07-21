@@ -5,8 +5,8 @@ type Locale = 'en' | 'ja'
 
 interface GozenLedgerScreenProps {
   report: NutritionReport
-  steps: number
-  kcal: number
+  distanceMetres?: number
+  elapsedSeconds?: number
   locale: Locale
 }
 
@@ -32,10 +32,10 @@ const copy = {
     water: '水分',
     recorded: '記録済',
     journey: '今日の巡行',
-    steps: '歩数',
-    burned: '消費',
+    distance: '距離',
+    duration: '所要時間',
     recovery: '回復提案',
-    recoveryCopy: 'しっかり休息と、たんぱく質を意識しましょう。',
+    recoveryCopy: '巡行のあとは、しっかり休息とたんぱく質を意識しましょう。',
     goodTitle: '今日よかったところ',
     lowTitle: '少なめかもしれない栄養',
     goodCopy: (nutrients: string) => `${nutrients}が、記録上しっかり整っています。`,
@@ -68,10 +68,10 @@ const copy = {
     water: 'Water',
     recorded: 'Logged',
     journey: 'Today’s rounds',
-    steps: 'Steps',
-    burned: 'Burned',
+    distance: 'Distance',
+    duration: 'Duration',
     recovery: 'Recovery suggestion',
-    recoveryCopy: 'Rest well and keep protein in mind.',
+    recoveryCopy: 'After your rounds, rest well and keep protein in mind.',
     goodTitle: 'What went well today',
     lowTitle: 'Nutrients that may be low',
     goodCopy: (nutrients: string) => `${nutrients} are well balanced in this record.`,
@@ -109,7 +109,22 @@ function formatNumber(value: number, locale: Locale): string {
   return new Intl.NumberFormat(locale === 'ja' ? 'ja-JP' : 'en-US').format(value)
 }
 
-export function GozenLedgerScreen({ report, steps, kcal, locale }: GozenLedgerScreenProps) {
+export function formatJourneyDistance(distanceMetres: number | undefined, locale: Locale): string {
+  if (distanceMetres === undefined) return '—'
+  if (distanceMetres < 1000) return `${formatNumber(Math.round(distanceMetres), locale)} m`
+  return `${(distanceMetres / 1000).toFixed(1)} km`
+}
+
+export function formatJourneyDuration(elapsedSeconds: number | undefined): string {
+  if (elapsedSeconds === undefined) return '—'
+  const totalSeconds = Math.floor(elapsedSeconds)
+  const minutes = Math.floor(totalSeconds / 60)
+  const seconds = totalSeconds % 60
+  if (minutes < 60) return `${minutes}:${String(seconds).padStart(2, '0')}`
+  return `${Math.floor(minutes / 60)}:${String(minutes % 60).padStart(2, '0')}`
+}
+
+export function GozenLedgerScreen({ report, distanceMetres, elapsedSeconds, locale }: GozenLedgerScreenProps) {
   const labels = copy[locale]
   const achieved = report.nutrients.filter((nutrient) => nutrient.judgment === 'OK').length
   const lowNutrients = nutrientNames(report.nutrients, 'Low', locale)
@@ -155,8 +170,8 @@ export function GozenLedgerScreen({ report, steps, kcal, locale }: GozenLedgerSc
         <h2 id="g07-journey-title">{labels.journey}</h2>
         <div className="g07-journey-row">
           <dl className="g07-key-values g07-journey-values">
-            <div><dt>{labels.steps}</dt><dd>{formatNumber(steps, locale)}</dd></div>
-            <div><dt>{labels.burned}</dt><dd>{formatNumber(kcal, locale)} kcal</dd></div>
+            <div><dt>{labels.distance}</dt><dd>{formatJourneyDistance(distanceMetres, locale)}</dd></div>
+            <div><dt>{labels.duration}</dt><dd>{formatJourneyDuration(elapsedSeconds)}</dd></div>
           </dl>
           <aside className="g07-mini-card" aria-labelledby="g07-recovery-title">
             <h3 id="g07-recovery-title">{labels.recovery}</h3>

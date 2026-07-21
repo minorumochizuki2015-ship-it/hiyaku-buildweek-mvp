@@ -18,8 +18,8 @@ interface NutritionFlowProps {
   backLabel?: string
   onContinue?: () => void
   locale: Locale
-  steps?: number
-  kcal?: number
+  distanceMetres?: number
+  elapsedSeconds?: number
 }
 
 interface NutritionFlowState {
@@ -73,8 +73,8 @@ export function NutritionFlow({
   backLabel = 'Arrival',
   onContinue,
   locale,
-  steps = 0,
-  kcal = 0,
+  distanceMetres,
+  elapsedSeconds,
 }: NutritionFlowProps) {
   const [description, setDescription] = useState('')
   const [amountGrams, setAmountGrams] = useState(200)
@@ -136,7 +136,7 @@ export function NutritionFlow({
   }
 
   const screen = [
-    <GozenLedgerScreen key="ledger" report={report} steps={steps} kcal={kcal} locale={locale} />,
+    <GozenLedgerScreen key="ledger" report={report} distanceMetres={distanceMetres} elapsedSeconds={elapsedSeconds} locale={locale} />,
     <NutrientCompareScreen key="compare" report={report} standard={flow.standard} onStandardChange={(standard) => dispatch({ type: 'setStandard', standard })} locale={locale} />,
     <TownDeliveryScreen key="town" report={report} locale={locale} />,
     <TomorrowSuggestScreen key="tomorrow" report={report} locale={locale} onRecordMeal={recordAnotherMeal} onViewGoyo={() => onContinue?.()} onBackToTown={onBack} />,
