@@ -56,6 +56,10 @@ export function LanguageToggle({ locale, onToggle }: { locale: Locale; onToggle:
   )
 }
 
+export function shouldDismissGoyoHelp(key: string): boolean {
+  return key === 'Escape'
+}
+
 export function AppShell({ children, locale, onLocaleToggle, selectedTab, missionInProgress, onTabSelect }: {
   children: ReactNode
   locale: Locale
@@ -65,6 +69,7 @@ export function AppShell({ children, locale, onLocaleToggle, selectedTab, missio
   onTabSelect: (tab: NavTab) => void
 }) {
   const contentRef = useRef<HTMLDivElement>(null)
+  const [isGoyoHelpOpen, setIsGoyoHelpOpen] = useState(false)
 
   useEffect(() => {
     const content = contentRef.current
@@ -76,9 +81,20 @@ export function AppShell({ children, locale, onLocaleToggle, selectedTab, missio
     return () => observer.disconnect()
   }, [locale])
 
+  useEffect(() => {
+    if (!isGoyoHelpOpen) return
+    const dismissOnEscape = (event: KeyboardEvent) => {
+      if (shouldDismissGoyoHelp(event.key)) setIsGoyoHelpOpen(false)
+    }
+    document.addEventListener('keydown', dismissOnEscape)
+    return () => document.removeEventListener('keydown', dismissOnEscape)
+  }, [isGoyoHelpOpen])
+
   return (
     <div className="app-shell">
-      <LanguageToggle locale={locale} onToggle={onLocaleToggle} />
+      <header className="app-shell-header">
+        <LanguageToggle locale={locale} onToggle={onLocaleToggle} />
+      </header>
       <div className="app-shell-content" ref={contentRef} lang={locale}>
         {children}
       </div>
@@ -86,18 +102,34 @@ export function AppShell({ children, locale, onLocaleToggle, selectedTab, missio
         {NAV_ITEMS.map((item) => {
           const locked = missionInProgress && item.id !== 'dispatch'
           return (
-            <button
-              className={`nav-item ${selectedTab === item.id ? 'is-active' : ''}`}
-              type="button"
-              key={item.id}
-              onClick={() => onTabSelect(item.id)}
-              disabled={locked}
-              aria-current={selectedTab === item.id ? 'page' : undefined}
-              title={locked ? (locale === 'en' ? 'Finish or pause the active mission before leaving Dispatch.' : '任務を終えるか一時停止してから、任務画面を離れてください。') : undefined}
-            >
-              <span className="nav-icon" aria-hidden="true">{item.icon}</span>
-              <span>{t(locale, item.label)}</span>
-            </button>
+            <div className="nav-item-group" key={item.id}>
+              <button
+                className={`nav-item ${selectedTab === item.id ? 'is-active' : ''}`}
+                type="button"
+                onClick={() => onTabSelect(item.id)}
+                disabled={locked}
+                aria-current={selectedTab === item.id ? 'page' : undefined}
+                title={locked ? (locale === 'en' ? 'Finish or pause the active mission before leaving Dispatch.' : '任務を終えるか一時停止してから、任務画面を離れてください。') : undefined}
+              >
+                <span className="nav-icon" aria-hidden="true">{item.icon}</span>
+                <span className="nav-label">{t(locale, item.label)}</span>
+              </button>
+              {item.id === 'dispatch' && (
+                <>
+                  <button
+                    className="goyo-help-toggle"
+                    type="button"
+                    aria-label={t(locale, 'nav.goyoHelp.aria')}
+                    aria-controls="goyo-help-popover"
+                    aria-expanded={isGoyoHelpOpen}
+                    onClick={() => setIsGoyoHelpOpen((open) => !open)}
+                  >
+                    ▲
+                  </button>
+                  {isGoyoHelpOpen && <div className="goyo-help-popover" id="goyo-help-popover" role="tooltip">{t(locale, 'nav.goyoHelp.copy')}</div>}
+                </>
+              )}
+            </div>
           )
         })}
       </nav>
