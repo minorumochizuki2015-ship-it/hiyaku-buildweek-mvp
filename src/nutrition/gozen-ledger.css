@@ -1,4 +1,9 @@
 .g07-gozen-ledger {
+  /* Match the app shell's column cap (.screen in styles.css). Without it these
+     screens stretch to the viewport on desktop; the report ran to 1240px. */
+  width: min(100%, 540px);
+  margin: 0 auto;
+
   min-height: 100%;
   overflow: hidden;
   padding: 14px 14px 70px;

@@ -1,4 +1,9 @@
 .g07-tomorrow-screen {
+  /* Match the app shell's column cap (.screen in styles.css). Without it these
+     screens stretch to the viewport on desktop; the report ran to 1240px. */
+  width: min(100%, 540px);
+  margin: 0 auto;
+
   min-height: 100dvh;
   padding: 14px 14px calc(70px + env(safe-area-inset-bottom));
   overflow: hidden;
@@ -144,9 +149,6 @@
   gap: 0;
 }
 
-@media (min-width: 540px) {
-  .g07-tomorrow-screen {
-    max-width: 375px;
-    margin: 0 auto;
-  }
-}
+/* Previously pinned to 375px here, which made this one report screen narrower
+   than the other three on any window wider than the phone. The shell cap above
+   already centres it at the same 540px as every other screen. */
