@@ -104,10 +104,20 @@ never committed and never reaches the browser.
 
 ## How Codex was used
 
-Codex wrote the product code. The work was split into isolated lanes, each in its own git worktree on its
-own branch, each given a written brief containing: the exact files it was allowed to touch, the files it was
-forbidden to touch, the reference material it had to read first, the acceptance gates it had to pass, and an
-obligation to report honestly what it could *not* verify.
+Codex Sol carried this project end to end — not just the code:
+
+| Area | What Codex Sol did |
+|---|---|
+| Product code | Every source file in `src/`, `shared/` and `worker/` |
+| Asset images | The character art, the town backgrounds, the food icons and the emblems were generated with Codex Sol |
+| UI generation | Screen layouts and component structure were produced from the canonical reference boards |
+| Video scripting | The scripts behind the in-app scene videos |
+| Review | Independent audit passes over the branch — spec-completeness, dead code, attribution hygiene |
+
+The code work was split into isolated lanes, each in its own git worktree on its own branch, each given a
+written brief containing: the exact files it was allowed to touch, the files it was forbidden to touch, the
+reference material it had to read first, the acceptance gates it had to pass, and an obligation to report
+honestly what it could *not* verify.
 
 That last part mattered more than expected. Two examples:
 
@@ -121,6 +131,11 @@ That last part mattered more than expected. Two examples:
 
 Lanes ran in parallel where their file sets were disjoint: the four nutrition report screens were built
 simultaneously as four independent components, then merged. Where a fix spanned shared files it ran alone.
+
+One thing a code review could not catch: a language toggle was silently covering the report's Next button,
+so the screen could not be advanced by touch at all. Every automated gate passed. It was only found by
+rendering the real app at 375px and trying to press the button. Visual acceptance stayed a separate,
+human step for exactly that reason.
 
 The commit history is the record.
 
