@@ -34,7 +34,19 @@ describe('TownDeliveryScreen', () => {
     const screen = renderToStaticMarkup(<TownDeliveryScreen report={report} locale="en" />)
 
     expect((screen.match(/\+ Small/g) ?? [])).toHaveLength(3)
-    expect((screen.match(/>—</g) ?? [])).toHaveLength(3)
+    expect((screen.match(/aria-label="Increase">↑/g) ?? [])).toHaveLength(2)
+    expect((screen.match(/aria-label="No increase">—/g) ?? [])).toHaveLength(2)
+  })
+
+  it('shows zero town-summary increases when every nutrient judgment is Low', () => {
+    const lowReport: NutritionReport = {
+      ...report,
+      nutrients: report.nutrients.map((nutrient) => ({ ...nutrient, judgment: 'Low' })),
+    }
+    const screen = renderToStaticMarkup(<TownDeliveryScreen report={lowReport} locale="en" />)
+
+    expect((screen.match(/aria-label="Increase">↑/g) ?? [])).toHaveLength(0)
+    expect((screen.match(/aria-label="No increase">—/g) ?? [])).toHaveLength(4)
   })
 
   it('switches all visible copy from English to Japanese', () => {

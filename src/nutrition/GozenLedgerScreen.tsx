@@ -25,12 +25,10 @@ const copy = {
     good: '良好',
     steady: '整い中',
     mealLog: '食事ログまとめ',
-    breakfast: '朝',
-    lunch: '昼',
-    dinner: '夜',
-    snack: '間食',
-    water: '水分',
-    recorded: '記録済',
+    loggedItem: '記録した内容',
+    matchedProduct: '一致した商品',
+    amount: '量',
+    unmatchedProduct: '商品には一致しませんでした。栄養値は推定です。',
     journey: '今日の巡行',
     distance: '距離',
     duration: '所要時間',
@@ -61,12 +59,10 @@ const copy = {
     good: 'Good',
     steady: 'Balancing',
     mealLog: 'Meal log summary',
-    breakfast: 'Breakfast',
-    lunch: 'Lunch',
-    dinner: 'Dinner',
-    snack: 'Snack',
-    water: 'Water',
-    recorded: 'Logged',
+    loggedItem: 'Logged item',
+    matchedProduct: 'Matched product',
+    amount: 'Amount',
+    unmatchedProduct: 'No product match. Nutrition figures are estimated.',
     journey: 'Today’s rounds',
     distance: 'Distance',
     duration: 'Duration',
@@ -159,10 +155,13 @@ export function GozenLedgerScreen({ report, distanceMetres, elapsedSeconds, loca
 
       <section className="g07-card" aria-labelledby="g07-meal-log-title">
         <h2 id="g07-meal-log-title">{labels.mealLog}</h2>
-        <div className="g07-log-row">
-          {[
-            ['🌅', labels.breakfast], ['☀️', labels.lunch], ['🌙', labels.dinner], ['🍡', labels.snack], ['💧', labels.water],
-          ].map(([icon, label]) => <div key={label}><span aria-hidden="true">{icon}</span>{label} <b>{labels.recorded}</b></div>)}
+        <div className="g07-log-details">
+          <dl className="g07-key-values">
+            <div><dt>{labels.loggedItem}</dt><dd>{report.description}</dd></div>
+            {report.productName && <div><dt>{labels.matchedProduct}</dt><dd>{report.productName}</dd></div>}
+            <div><dt>{labels.amount}</dt><dd>{formatNumber(report.amountGrams, locale)} g</dd></div>
+          </dl>
+          {!report.productName && <p className="g07-log-note">{labels.unmatchedProduct}</p>}
         </div>
       </section>
 

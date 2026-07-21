@@ -195,6 +195,10 @@
   font-size: .6rem;
 }
 
+.g07-town-delivery__summary .g07-town-delivery__summary-neutral {
+  color: #827694;
+}
+
 .g07-town-delivery :focus-visible {
   outline: 3px solid #f6e3ac;
   outline-offset: 3px;
