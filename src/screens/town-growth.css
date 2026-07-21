@@ -32,6 +32,7 @@
   border-radius: 8px;
   aspect-ratio: 506 / 900;
   background: #2c1e31;
+  container-type: inline-size;
   isolation: isolate;
 }
 
@@ -55,6 +56,32 @@
   display: block;
   width: 100%;
   height: auto;
+}
+
+.town-growth__person {
+  position: absolute;
+  display: block;
+  margin: 0;
+  pointer-events: none;
+  transform: translateX(-50%);
+}
+
+.town-growth__person img {
+  display: block;
+  width: 100%;
+  height: auto;
+  will-change: transform;
+  animation: town-growth-person-drift var(--town-person-drift-duration) ease-in-out var(--town-person-drift-delay) infinite alternate;
+}
+
+@keyframes town-growth-person-drift {
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(var(--town-person-drift-distance));
+  }
 }
 
 .town-growth__building--score {
@@ -101,5 +128,10 @@
   .town-growth *::after {
     scroll-behavior: auto;
     transition-duration: 0.01ms;
+  }
+
+  .town-growth__person img {
+    animation: none;
+    transform: none;
   }
 }
