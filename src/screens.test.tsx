@@ -1,6 +1,7 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it, vi } from 'vitest'
-import { AppShell, ArrivalScreen, DispatchScreen, GoyoTabContent, JourneyScreen, LanguageToggle, journeyStateAfterAccept, nutritionStateFor, shouldDismissGoyoHelp } from './App'
+import { AppShell, ArrivalScreen, DispatchScreen, GoyoTabContent, JourneyScreen, LanguageToggle, JOURNEY_PRESENTATION_STATES, isJourneyScreenState, journeyPresentationFor, journeyStateAfterGoyoAccept, nutritionStateFor, shouldDismissGoyoHelp, type JourneyState } from './App'
+import { NutritionFlow } from './nutrition/NutritionFlow'
 import { checkpointRouteState } from './checkpointRoute'
 import { distanceTargetMetres, haversineDistanceMetres, rivalDistanceAtElapsedSeconds, rivalPaceMultiplier, startWalkTracking } from './movement'
 import { buildSealSummary, formatSealDate, sealCanvasDataUrl } from './ArrivalSeal'
@@ -169,14 +170,92 @@ describe('NAVSHELL1', () => {
     expect(translateText('Accept Dispatch', locale)).toBe('任務を受ける')
   })
 
-  it('keeps the Dispatch → Accept transition on the existing Journey renderer', () => {
+  it('keeps the Goyo → Accept transition on the existing Journey renderer', () => {
     const screen = renderToStaticMarkup(
-      <JourneyScreen mission={mission} state={journeyStateAfterAccept()} stats={{ elapsedSeconds: 0, progress: 0, distanceMetres: 0 }} targetDistanceMetres={800} availableMinutes={10} movementMode="demo" locationStatus="" onPause={() => undefined} onEnd={() => undefined} />,
+      <JourneyScreen mission={mission} state={journeyStateAfterGoyoAccept()} stats={{ elapsedSeconds: 0, progress: 0, distanceMetres: 0 }} targetDistanceMetres={800} availableMinutes={10} movementMode="demo" locationStatus="" onPause={() => undefined} onEnd={() => undefined} />,
     )
 
-    expect(journeyStateAfterAccept()).toBe('ready')
+    expect(journeyStateAfterGoyoAccept()).toBe('ready')
     expect(screen).toContain('Mission ready')
     expect(screen).toContain('End Mission')
+  })
+})
+
+describe('core journey render precedence', () => {
+  it('drives the issued duty through journey, arrival, and nutrition rendered screens', () => {
+    let state: JourneyState = 'idle'
+    let selectedTab = 'dispatch'
+    let issuedMission: typeof mission | null = null
+    let completion: ReturnType<typeof mockCompleteMission> | null = null
+    const stats = { elapsedSeconds: 100, progress: 100, distanceMetres: 800 }
+
+    const acceptDispatch = () => {
+      issuedMission = mission
+      state = 'idle'
+    }
+    const acceptGoyo = () => { state = journeyStateAfterGoyoAccept() }
+    const returnToTown = () => { selectedTab = 'town' }
+    const endMission = () => { state = 'completing' }
+    const receiveCompletion = () => {
+      completion = mockCompleteMission({ distanceMeters: 800, durationSeconds: 100, completionPercent: 100, missionTitle: mission.title, courierId: mission.courierId })
+      state = 'completed'
+    }
+    const openNutrition = () => { state = 'nutrition' }
+
+    const renderCurrentScreen = (): string => {
+      const presentation = journeyPresentationFor(state)
+      if (presentation === 'journey' && isJourneyScreenState(state) && issuedMission) {
+        return renderToStaticMarkup(<JourneyScreen mission={issuedMission} state={state} stats={stats} targetDistanceMetres={800} availableMinutes={10} movementMode="demo" locationStatus="" onPause={() => undefined} onEnd={endMission} />)
+      }
+      if (presentation === 'arrival' && issuedMission && completion) {
+        return renderToStaticMarkup(<ArrivalScreen mission={issuedMission} completion={completion} stats={stats} targetDistanceMetres={800} availableMinutes={10} onRestart={() => undefined} onNutrition={openNutrition} />)
+      }
+      if (presentation === 'nutrition') {
+        return renderToStaticMarkup(<NutritionFlow onBack={() => undefined} locale="en" distanceMetres={stats.distanceMetres} elapsedSeconds={stats.elapsedSeconds} />)
+      }
+      return renderToStaticMarkup(
+        <GoyoTabContent
+          duty={issuedMission ? { name: { en: issuedMission.title, ja: issuedMission.title }, description: { en: issuedMission.briefing, ja: issuedMission.briefing } } : null}
+          checkpoints={[]}
+          goals={[]}
+          townEffects={[]}
+          mikotoQuote={null}
+          locale="en"
+          onAccept={acceptGoyo}
+          onBack={returnToTown}
+          onGenerate={() => undefined}
+          generating={false}
+        />,
+      )
+    }
+
+    expect(JOURNEY_PRESENTATION_STATES).toEqual(['generating', 'nutrition-before-journey', 'ready', 'active', 'paused', 'completing', 'completed', 'nutrition'])
+    expect(renderCurrentScreen()).toContain('Accept Dispatch')
+
+    acceptDispatch()
+    expect(renderCurrentScreen()).toContain('Today Goyo')
+    returnToTown()
+    expect(selectedTab).toBe('town')
+    expect(issuedMission).toBe(mission)
+    expect(state).toBe('idle')
+
+    selectedTab = 'dispatch'
+    acceptGoyo()
+    selectedTab = 'town'
+    expect(journeyPresentationFor(state)).toBe('journey')
+    expect(renderCurrentScreen()).toContain('Mission ready')
+
+    state = 'active'
+    expect(renderCurrentScreen()).toContain('End Mission')
+    endMission()
+    expect(journeyPresentationFor(state)).toBe('journey')
+    receiveCompletion()
+    expect(renderCurrentScreen()).toContain('ARRIVAL RECORDED')
+
+    openNutrition()
+    expect(journeyPresentationFor(state)).toBe('nutrition')
+    expect(renderCurrentScreen()).toContain('Nutrition Report')
+    expect(selectedTab).toBe('town')
   })
 })
 

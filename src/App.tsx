@@ -21,8 +21,43 @@ import { GoyoDetailScreen, type GoyoCheckpoint, type GoyoDuty, type GoyoGoal, ty
 import type { NutritionReport } from '../shared/nutrition'
 import { localizeContent, t, type Locale } from './i18n'
 
-type JourneyState = 'idle' | 'generating' | 'duty-issued' | 'nutrition-before-journey' | 'ready' | 'active' | 'paused' | 'completing' | 'completed' | 'nutrition'
+export type JourneyState = 'idle' | 'generating' | 'nutrition-before-journey' | 'ready' | 'active' | 'paused' | 'completing' | 'completed' | 'nutrition'
 export type NavTab = 'town' | 'workout' | 'dispatch' | 'flags' | 'records'
+
+/**
+ * These states own the main content area even if the user last selected a
+ * different tab. Only `idle` may render a tab landing view.
+ */
+export const JOURNEY_PRESENTATION_STATES = [
+  'generating',
+  'nutrition-before-journey',
+  'ready',
+  'active',
+  'paused',
+  'completing',
+  'completed',
+  'nutrition',
+] as const satisfies readonly Exclude<JourneyState, 'idle'>[]
+
+export function isJourneyPresentationState(state: JourneyState): state is Exclude<JourneyState, 'idle'> {
+  return (JOURNEY_PRESENTATION_STATES as readonly JourneyState[]).includes(state)
+}
+
+export type JourneyPresentation = 'preparing' | 'nutrition-before-journey' | 'journey' | 'arrival' | 'nutrition' | null
+export type JourneyScreenState = Extract<JourneyState, 'ready' | 'active' | 'paused' | 'completing'>
+
+export function isJourneyScreenState(state: JourneyState): state is JourneyScreenState {
+  return state === 'ready' || state === 'active' || state === 'paused' || state === 'completing'
+}
+
+export function journeyPresentationFor(state: JourneyState): JourneyPresentation {
+  if (!isJourneyPresentationState(state)) return null
+  if (state === 'generating') return 'preparing'
+  if (state === 'nutrition-before-journey') return 'nutrition-before-journey'
+  if (state === 'completed') return 'arrival'
+  if (state === 'nutrition') return 'nutrition'
+  return 'journey'
+}
 
 const NAV_ITEMS: ReadonlyArray<{ id: NavTab; icon: string; label: 'nav.town' | 'nav.workout' | 'nav.dispatch' | 'nav.flags' | 'nav.records' }> = [
   { id: 'town', icon: '🏯', label: 'nav.town' },
@@ -42,8 +77,8 @@ interface JourneyStats {
   distanceMetres: number
 }
 
-/** The existing Accept Dispatch transition always enters the Journey renderer. */
-export function journeyStateAfterAccept(): Extract<JourneyState, 'ready'> {
+/** An issued Goyo already has its mission input, so acceptance starts that mission. */
+export function journeyStateAfterGoyoAccept(): Extract<JourneyState, 'ready'> {
   return 'ready'
 }
 
@@ -321,6 +356,17 @@ export function DispatchScreen({ onGenerate, generating }: { onGenerate: (input:
   )
 }
 
+export function MissionPreparingScreen() {
+  return (
+    <main className="screen journey-screen" aria-labelledby="mission-preparing-title">
+      <section className="placeholder-panel" role="status" aria-live="polite">
+        <p className="eyebrow">GOYO</p>
+        <h1 id="mission-preparing-title">Preparing your mission…</h1>
+      </section>
+    </main>
+  )
+}
+
 export interface GoyoTabContentProps {
   duty: GoyoDuty | null
   checkpoints: readonly GoyoCheckpoint[]
@@ -354,7 +400,7 @@ export function GoyoTabContent({ duty, checkpoints, goals, townEffects, mikotoQu
 
 export function JourneyScreen({ mission, state, stats, targetDistanceMetres, availableMinutes, movementMode, locationStatus, onPause, onEnd }: {
   mission: Mission
-  state: Extract<JourneyState, 'ready' | 'active' | 'paused' | 'completing'>
+  state: JourneyScreenState
   stats: JourneyStats
   targetDistanceMetres: number
   availableMinutes: AvailableMinutes
@@ -646,7 +692,7 @@ export default function App() {
       setMovementMode(selectedMovementMode)
       setLocationStatus('')
       setSelectedTab('dispatch')
-      setState('duty-issued')
+      setState('idle')
     } catch {
       setState('idle')
     }
@@ -720,32 +766,36 @@ export default function App() {
     { icon: '🚩', label: townParams[2].label, magnitude: { en: String(townParams[2].value), ja: String(townParams[2].value) } },
   ]
   let content: ReactNode
+  const journeyPresentation = journeyPresentationFor(state)
 
-  if (selectedTab === 'town') {
-    content = <TownHomeScreen duty={townDuty} goals={goals} townParams={townParams} totalScore={currentTotalScore} mikotoQuote={mikotoQuote} locale={locale} onOpenGoyo={() => setSelectedTab('dispatch')} />
-  } else if (selectedTab === 'workout') {
-    content = <WorkoutEntryScreen duty={null} onSubmit={generateMission} onBack={() => setSelectedTab('dispatch')} generating={state === 'generating'} locale={locale} />
-  } else if (selectedTab === 'flags' || selectedTab === 'records') {
-    content = <ComingSoonScreen tab={selectedTab} locale={locale} onReturnToDispatch={() => setSelectedTab('dispatch')} />
-  } else if (state === 'idle' || state === 'generating' || state === 'duty-issued') {
-    content = <GoyoTabContent duty={goyoDuty} checkpoints={goyoCheckpoints} goals={goyoGoals} townEffects={goyoTownEffects} mikotoQuote={goyoDuty ? mikotoQuote : null} locale={locale} onAccept={() => setState(nutritionStateFor('dispatch'))} onBack={() => setSelectedTab('town')} onGenerate={generateMission} generating={state === 'generating'} />
-  } else if (state === 'nutrition-before-journey') {
+  if (journeyPresentation === 'preparing') {
+    content = <MissionPreparingScreen />
+  } else if (journeyPresentation === 'nutrition-before-journey') {
     content = <NutritionFlow onBack={() => setState('idle')} backLabel="Dispatch" onContinue={() => setState('ready')} locale={locale} distanceMetres={undefined} elapsedSeconds={undefined} previousFoodScore={latestNutritionReport?.foodScore ?? 0} onReport={setLatestNutritionReport} />
-  } else if (missionInProgress && activeMission) {
+  } else if (journeyPresentation === 'journey' && isJourneyScreenState(state) && activeMission) {
     content = <JourneyScreen mission={activeMission} state={state} stats={stats} targetDistanceMetres={targetDistanceMetres ?? 0} availableMinutes={availableMinutes} movementMode={movementMode} locationStatus={locationStatus} onPause={() => setState((current) => current === 'paused' ? 'active' : 'paused')} onEnd={() => {
       distanceMetresRef.current = targetDistanceMetres ?? 0
       setStats((current) => ({ ...current, progress: 100, distanceMetres: targetDistanceMetres ?? current.distanceMetres }))
       setState('completing')
     }} />
-  } else if (state === 'completed' && activeMission && completion) {
+  } else if (journeyPresentation === 'arrival' && activeMission && completion) {
     content = <ArrivalScreen mission={activeMission} completion={completion} stats={stats} targetDistanceMetres={targetDistanceMetres ?? 0} availableMinutes={availableMinutes} onRestart={() => {
       setSelectedTab('dispatch')
       setState('idle')
     }} onNutrition={() => setState('nutrition')} />
-  } else if (state === 'nutrition') {
+  } else if (journeyPresentation === 'nutrition') {
     content = <NutritionFlow onBack={() => setState('completed')} locale={locale} distanceMetres={stats.distanceMetres} elapsedSeconds={stats.elapsedSeconds} previousFoodScore={latestNutritionReport?.foodScore ?? 0} onReport={setLatestNutritionReport} />
+  } else if (journeyPresentation) {
+    // A transition cannot fall back to a tab if its mission payload is still arriving.
+    content = <MissionPreparingScreen />
+  } else if (selectedTab === 'town') {
+    content = <TownHomeScreen duty={townDuty} goals={goals} townParams={townParams} totalScore={currentTotalScore} mikotoQuote={mikotoQuote} locale={locale} onOpenGoyo={() => setSelectedTab('dispatch')} />
+  } else if (selectedTab === 'workout') {
+    content = <WorkoutEntryScreen duty={null} onSubmit={generateMission} onBack={() => setSelectedTab('dispatch')} generating={false} locale={locale} />
+  } else if (selectedTab === 'flags' || selectedTab === 'records') {
+    content = <ComingSoonScreen tab={selectedTab} locale={locale} onReturnToDispatch={() => setSelectedTab('dispatch')} />
   } else {
-    content = <DispatchScreen onGenerate={generateMission} generating={false} />
+    content = <GoyoTabContent duty={goyoDuty} checkpoints={goyoCheckpoints} goals={goyoGoals} townEffects={goyoTownEffects} mikotoQuote={goyoDuty ? mikotoQuote : null} locale={locale} onAccept={() => setState(journeyStateAfterGoyoAccept())} onBack={() => setSelectedTab('town')} onGenerate={generateMission} generating={false} />
   }
 
   return (
