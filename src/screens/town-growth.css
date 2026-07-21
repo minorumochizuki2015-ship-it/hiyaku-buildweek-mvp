@@ -15,97 +15,91 @@
   letter-spacing: .04em;
 }
 
-.town-growth__facilities {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 5px;
-}
-
-.town-growth__facility {
-  min-width: 0;
-  padding: 4px 3px 6px;
-  border: 1px solid transparent;
-  border-radius: 8px;
-  text-align: center;
-}
-
-.town-growth__art-wrap {
-  position: relative;
+.town-growth__description {
+  position: absolute;
+  width: 1px;
+  height: 1px;
   overflow: hidden;
-  border-radius: 6px;
-  background: rgb(6 7 18 / 58%);
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
-.town-growth__art {
+.town-growth__scene {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  border-radius: 8px;
+  aspect-ratio: 506 / 900;
+  background: #2c1e31;
+  isolation: isolate;
+}
+
+.town-growth__base {
+  position: absolute;
+  inset: 0;
   display: block;
   width: 100%;
-  aspect-ratio: 1;
+  height: 100%;
   object-fit: cover;
 }
 
-.town-growth__facility h3 {
-  min-height: 2.6em;
-  margin: 4px 0 1px;
-  color: #f7f2e8;
-  font-family: Georgia, "Hiragino Mincho ProN", serif;
-  font-size: .66rem;
-  font-weight: 700;
-  line-height: 1.3;
-}
-
-.town-growth__rank,
-.town-growth__score,
-.town-growth__cause {
-  margin: 0;
-  font-variant-numeric: tabular-nums;
-}
-
-.town-growth__rank,
-.town-growth__score {
-  color: #b9b2c9;
-  font-size: .55rem;
-  line-height: 1.45;
-}
-
-.town-growth__rank strong,
-.town-growth__score strong {
-  color: #f7d98a;
-  font-size: .64rem;
-}
-
-.town-growth__cause {
-  min-height: 4.35em;
-  margin-top: 3px;
-  color: #c9c0de;
-  font-size: .52rem;
-  line-height: 1.45;
-}
-
-.town-growth__newly-grown {
+.town-growth__building {
   position: absolute;
-  inset: auto 3px 3px;
-  padding: 2px 3px;
-  border-radius: 3px;
-  background: rgb(79 54 136 / 92%);
+  display: block;
+  margin: 0;
+  transform: translateX(-50%);
+}
+
+.town-growth__building img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.town-growth__building--score {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.town-growth__building--score:focus-visible {
+  outline: 3px solid #fff1c7;
+  outline-offset: 3px;
+}
+
+.town-growth__label {
+  position: absolute;
+  bottom: calc(100% + 4px);
+  left: 50%;
+  display: grid;
+  width: max-content;
+  max-width: min(176px, 88vw);
+  gap: 2px;
+  padding: 5px 7px;
+  border: 1px solid rgb(247 217 138 / 62%);
+  border-radius: 6px;
+  background: rgb(12 16 34 / 92%);
+  box-shadow: 0 2px 8px rgb(0 0 0 / 42%);
+  color: #f7f2e8;
+  font-family: "Avenir Next", "Hiragino Kaku Gothic ProN", "Hiragino Sans", sans-serif;
+  font-size: .57rem;
+  line-height: 1.35;
+  text-align: left;
+  transform: translateX(-50%);
+}
+
+.town-growth__label strong {
   color: #fff1c7;
-  font-size: .48rem;
-  font-weight: 800;
-  line-height: 1.25;
-}
-
-.town-growth__facility--grown {
-  border-color: rgb(247 217 138 / 78%);
-  animation: town-growth-pulse 260ms ease-out;
-}
-
-@keyframes town-growth-pulse {
-  0% { background: rgb(247 217 138 / 26%); transform: translateY(1px); }
-  100% { background: transparent; transform: translateY(0); }
+  font-size: .61rem;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .town-growth__facility--grown {
-    animation: none;
-    background: rgb(247 217 138 / 13%);
+  .town-growth *,
+  .town-growth *::before,
+  .town-growth *::after {
+    scroll-behavior: auto;
+    transition-duration: 0.01ms;
   }
 }

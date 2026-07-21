@@ -50,7 +50,7 @@ describe('TownHomeScreen', () => {
     expect(screen).toContain('1 / 3')
     expect(screen).toContain('18/50')
     expect(screen).toContain('width:36%')
-    expect(screen).toContain('src="/assets/bg-town-night-street.png"')
+    expect(screen).toContain('src="/assets/district-base.png"')
     expect(screen).not.toContain('1,240')
   })
 
@@ -96,7 +96,7 @@ describe('TownHomeScreen', () => {
     expect(screen).toContain('No duty yet. Accept one from Goyo.')
     expect(screen).toContain('Go to Goyo')
     expect(screen).toContain('0/1')
-    expect(screen).toContain('src="/assets/bg-town-night-street.png"')
+    expect(screen).toContain('src="/assets/district-base.png"')
   })
 
   it('places rank-tiered town facilities after the scene using the supplied measured parameters', () => {
@@ -114,8 +114,8 @@ describe('TownHomeScreen', () => {
     expect(screen).toContain('src="/assets/town/gozendokoro-3.png"')
     expect(screen).toContain('src="/assets/town/rojolive-4.png"')
     expect(screen).toContain('src="/assets/town/chaya-3.png"')
-    expect(screen.indexOf('town-home__town')).toBeLessThan(screen.indexOf('town-growth'))
-    expect(screen.indexOf('town-growth')).toBeLessThan(screen.indexOf('town-home__params'))
+    expect(screen.indexOf('town-growth')).toBeLessThan(screen.indexOf('town-home__quote'))
+    expect(screen.indexOf('town-home__quote')).toBeLessThan(screen.indexOf('town-home__params'))
   })
 
   it('omits the folded goal strip when the caller has no goals', () => {

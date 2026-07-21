@@ -1,6 +1,6 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
-import { TownGrowth, TOWN_GROWTH_RANK_THRESHOLDS, townGrowthRanks } from './TownGrowth'
+import { TownGrowth, TOWN_BUILDING_PLACEMENTS, TOWN_GROWTH_RANK_THRESHOLDS, townGrowthRanks } from './TownGrowth'
 
 describe('TownGrowth', () => {
   it('renders rank 1 art for every facility at the measured score of zero', () => {
@@ -9,7 +9,9 @@ describe('TownGrowth', () => {
     expect(screen).toContain('src="/assets/town/gozendokoro-1.png"')
     expect(screen).toContain('src="/assets/town/rojolive-1.png"')
     expect(screen).toContain('src="/assets/town/chaya-1.png"')
-    expect((screen.match(/Rank <strong>1<\/strong>/g) ?? [])).toHaveLength(3)
+    expect(screen).toContain('aria-label="Food hall. Rank 1.')
+    expect(screen).toContain('aria-label="Bridge. Rank 1.')
+    expect(screen).toContain('aria-label="Tea house. Rank 1.')
   })
 
   it('uses a higher food score to select a higher food-hall rank art', () => {
@@ -30,5 +32,20 @@ describe('TownGrowth', () => {
       streetStage: 4,
       teaHouse: 3,
     })
+  })
+
+  it('uses one exported placement array for every building position in the composed scene', () => {
+    const screen = renderToStaticMarkup(<TownGrowth food={0} run={0} total={0} locale="en" />)
+
+    expect(TOWN_BUILDING_PLACEMENTS).toHaveLength(8)
+    expect(TOWN_BUILDING_PLACEMENTS.map((placement) => placement.id)).toEqual([
+      'honjin', 'dojo', 'teaHouse', 'insatsujo', 'koen', 'yatai', 'streetStage', 'foodHall',
+    ])
+    for (const placement of TOWN_BUILDING_PLACEMENTS) {
+      expect(screen).toContain(`left:${placement.leftPercent}%`)
+      expect(screen).toContain(`bottom:${placement.bottomPercent}%`)
+      expect(screen).toContain(`width:${placement.widthPercent}%`)
+      expect(screen).toContain(`z-index:${placement.z}`)
+    }
   })
 })

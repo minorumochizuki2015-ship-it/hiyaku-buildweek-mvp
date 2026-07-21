@@ -60,8 +60,6 @@ const copy = {
   openGoyo: { en: 'Go to Goyo', ja: '御用へ行く' },
   todayGoals: { en: 'Today’s Goyo', ja: '今日の御用' },
   minutes: { en: 'min', ja: '分' },
-  townImage: { en: 'Night street in town', ja: '夜の町並み' },
-  townScene: { en: 'Town scene', ja: '町の風景' },
 } as const satisfies Record<string, LocalizedCopy>
 
 function text(value: LocalizedTownHomeText | LocalizedCopy, locale: TownHomeLocale): string {
@@ -167,12 +165,9 @@ export function TownHomeScreen({ duty, goals, townParams, totalScore, mikotoQuot
         </div>
       </section>
 
-      <section className="town-home__town" aria-label={text(copy.townScene, locale)}>
-        <img className="town-home__town-image" src="/assets/bg-town-night-street.png" alt={text(copy.townImage, locale)} />
-        <p className="town-home__quote">{text(mikotoQuote, locale)}</p>
-      </section>
-
       <TownGrowth food={foodScore} run={runScore} total={totalScore} locale={locale} />
+
+      <p className="town-home__quote">{text(mikotoQuote, locale)}</p>
 
       <dl className="town-home__params" aria-label={locale === 'ja' ? '町の指標' : 'Town parameters'}>
         {townParams.map((parameter) => (
