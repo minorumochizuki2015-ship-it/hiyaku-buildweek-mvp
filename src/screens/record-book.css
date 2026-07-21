@@ -24,6 +24,8 @@
 .record-book__summary dl > div { min-width: 0; padding: 3px 4px; text-align: center; }
 .record-book dt { color: #c9c0de; font-size: .58rem; line-height: 1.35; }
 .record-book dd { margin: 2px 0 0; color: #f7d98a; font-size: .76rem; font-variant-numeric: tabular-nums; font-weight: 700; line-height: 1.35; overflow-wrap: anywhere; }
+.record-book__mode-tag { display: inline-block; margin: 3px 0 0 5px; padding: 2px 5px; border: 1px solid rgb(244 185 66 / 48%); border-radius: 999px; color: #f7d98a; font-size: .52rem; font-weight: 900; letter-spacing: .06em; line-height: 1.2; vertical-align: middle; }
+.record-book__entry > .record-book__mode-tag { margin: -4px 0 8px; }
 
 .record-book__section { margin-top: 12px; overflow: hidden; }
 .record-book__list { display: grid; gap: 8px; margin: 0; padding: 10px; list-style: none; counter-reset: entries; }

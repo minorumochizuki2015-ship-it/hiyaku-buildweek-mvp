@@ -1,4 +1,5 @@
 import type { NutritionReport } from '../../shared/nutrition'
+import type { MovementMode } from '../movement'
 import './record-book.css'
 
 export type RecordBookLocale = 'en' | 'ja'
@@ -8,6 +9,7 @@ export interface RecordBookRun {
   distanceMetres: number | null
   durationSeconds: number | null
   rank: string | null
+  movementMode: MovementMode
 }
 
 export interface RecordBookScreenProps {
@@ -29,6 +31,7 @@ const copy = {
   runs: { en: 'Courier runs', ja: '飛脚行' },
   meals: { en: 'Meals', ja: '食事' },
   totalDistance: { en: 'Total distance', ja: '合計距離' },
+  simulated: { en: 'SIMULATED', ja: 'シミュレーション' },
   noEntries: { en: 'No entries yet. Accept a goyo to begin.', ja: 'まだ記録はありません。御用を受けて始めましょう。' },
   openGoyo: { en: 'Accept a Goyo', ja: '御用を受ける' },
   noRuns: { en: 'No courier runs recorded.', ja: '飛脚行はまだ記録されていません。' },
@@ -84,6 +87,7 @@ function nutrientSourceCounts(report: NutritionReport): { productRecord: number;
 export function RecordBookScreen({ runs, meals, locale, onOpenGoyo }: RecordBookScreenProps) {
   const measuredDistances = runs.map((run) => run.distanceMetres).filter(isFiniteNumber)
   const totalDistance = measuredDistances.length > 0 ? measuredDistances.reduce((total, distance) => total + distance, 0) : null
+  const includesSimulatedDistance = runs.some((run) => run.movementMode === 'demo' && isFiniteNumber(run.distanceMetres))
   const hasEntries = runs.length > 0 || meals.length > 0
 
   return (
@@ -109,7 +113,7 @@ export function RecordBookScreen({ runs, meals, locale, onOpenGoyo }: RecordBook
           </div>
           <div>
             <dt>{text(copy.totalDistance, locale)}</dt>
-            <dd>{formatDistance(totalDistance, locale)}</dd>
+            <dd>{formatDistance(totalDistance, locale)}{includesSimulatedDistance && <span className="record-book__mode-tag">{text(copy.simulated, locale)}</span>}</dd>
           </div>
         </dl>
       </section>
@@ -128,6 +132,7 @@ export function RecordBookScreen({ runs, meals, locale, onOpenGoyo }: RecordBook
                 {[...runs].reverse().map((run, index) => (
                   <li className="record-book__entry" key={`run-${runs.length - index}`}>
                     <h3>{displayText(run.title)}</h3>
+                    {run.movementMode === 'demo' && <span className="record-book__mode-tag">{text(copy.simulated, locale)}</span>}
                     <dl className="record-book__details">
                       <div><dt>{text(copy.distance, locale)}</dt><dd>{formatDistance(run.distanceMetres, locale)}</dd></div>
                       <div><dt>{text(copy.duration, locale)}</dt><dd>{formatDuration(run.durationSeconds)}</dd></div>

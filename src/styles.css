@@ -141,6 +141,8 @@ legend, .name-field > span { display: block; margin-bottom: 9px; color: #e8e4dc;
 .arrival-header h1 { max-width: 340px; color: #fffaf0; text-shadow: 0 3px 18px rgb(0 0 0 / 72%); }
 .arrival-kicker { margin: 12px 0 0; max-width: 270px; color: #fff7e8; font-family: Georgia, "Hiragino Mincho ProN", serif; line-height: 1.5; text-shadow: 0 2px 9px rgb(0 0 0 / 72%); }
 .arrival-seal { position: relative; margin: -26px 0 18px; padding: 5px; border-radius: 21px; background: linear-gradient(135deg, #f5ca70, #a92f2c 44%, #f5ca70); box-shadow: 0 16px 38px rgb(0 0 0 / 40%); }
+.arrival-seal-wrap { position: relative; }
+.simulated-distance-tag { position: absolute; bottom: 75px; left: 24%; padding: 3px 6px; border: 1px solid rgb(244 185 66 / 52%); border-radius: 999px; background: rgb(16 21 43 / 88%); color: #f7d98a; font-size: .52rem; font-weight: 900; letter-spacing: .06em; line-height: 1.2; }
 .seal-certificate { display: grid; min-height: 478px; padding: 18px 17px 14px; overflow: hidden; border: 1px solid rgb(255 232 177 / 72%); border-radius: 17px; background: radial-gradient(circle at 50% 42%, rgb(244 185 66 / 22%), transparent 39%), linear-gradient(145deg, #20172b, #10152b 67%); text-align: center; }
 .seal-brand, .seal-date { margin: 0; color: #f8d782; font-size: .64rem; font-weight: 900; letter-spacing: .17em; }
 .seal-mission { min-height: 2.7em; margin: 12px auto 5px; color: #fff3d5; font-family: Georgia, "Hiragino Mincho ProN", serif; font-size: clamp(1.15rem, 5vw, 1.48rem); font-weight: 700; line-height: 1.25; }

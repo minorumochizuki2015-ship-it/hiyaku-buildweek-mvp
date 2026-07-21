@@ -546,13 +546,14 @@ export function ArrivalActions({ onRestart, onReturnToTown, onShare }: { onResta
   )
 }
 
-export function ArrivalScreen({ mission, completion, locale, stats, targetDistanceMetres, availableMinutes, isLocalNarrative = false, onRestart, onReturnToTown, onNutrition }: {
+export function ArrivalScreen({ mission, completion, locale, stats, targetDistanceMetres, availableMinutes, movementMode, isLocalNarrative = false, onRestart, onReturnToTown, onNutrition }: {
   mission: Mission
   completion: MissionCompletion
   locale: Locale
   stats: JourneyStats
   targetDistanceMetres: number
   availableMinutes: AvailableMinutes
+  movementMode: MovementMode
   isLocalNarrative?: boolean
   onRestart: () => void
   onReturnToTown: () => void
@@ -622,7 +623,10 @@ export function ArrivalScreen({ mission, completion, locale, stats, targetDistan
           <p className="arrival-kicker">Your courier run has found its door.</p>
         </header>
       </section>
-      <ArrivalSeal data={sealData} />
+      <div className="arrival-seal-wrap">
+        <ArrivalSeal data={sealData} />
+        {movementMode === 'demo' && <span className="simulated-distance-tag">{t(locale, 'movement.simulated')}</span>}
+      </div>
       <section className="epilogue">
         {isLocalNarrative && <p className="offline-demo-notice" role="status">{t(locale, 'offline.mission')}</p>}
         <p>{completion.epilogue}</p>
@@ -734,12 +738,13 @@ export default function App() {
           distanceMetres: stats.distanceMetres,
           durationSeconds: stats.elapsedSeconds,
           rank: result.value.rank,
+          movementMode,
         }])
         setMissionCompletedThisSession(true)
         setState('completed')
       })
     return () => { cancelled = true }
-  }, [state, mission, stats.distanceMetres, stats.elapsedSeconds, targetDistanceMetres])
+  }, [state, mission, movementMode, stats.distanceMetres, stats.elapsedSeconds, targetDistanceMetres])
 
   const activeMission = useMemo(() => mission, [mission])
 
@@ -865,7 +870,7 @@ export default function App() {
       setState('completing')
     }} />
   } else if (journeyPresentation === 'arrival' && activeMission && completion) {
-    content = <ArrivalScreen mission={activeMission} completion={completion} locale={locale} stats={stats} targetDistanceMetres={targetDistanceMetres ?? 0} availableMinutes={availableMinutes} isLocalNarrative={missionUsedLocalFallback || completionUsedLocalFallback} onRestart={() => {
+    content = <ArrivalScreen mission={activeMission} completion={completion} locale={locale} stats={stats} targetDistanceMetres={targetDistanceMetres ?? 0} availableMinutes={availableMinutes} movementMode={movementMode} isLocalNarrative={missionUsedLocalFallback || completionUsedLocalFallback} onRestart={() => {
       setSelectedTab('dispatch')
       setState('idle')
     }} onReturnToTown={returnToTown} onNutrition={() => setState('nutrition')} />

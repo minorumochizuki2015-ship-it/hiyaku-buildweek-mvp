@@ -24,6 +24,7 @@ const run: RecordBookRun = {
   distanceMetres: 845,
   durationSeconds: 125,
   rank: 'Edo Roadrunner',
+  movementMode: 'demo',
 }
 
 describe('RecordBookScreen', () => {
@@ -36,11 +37,31 @@ describe('RecordBookScreen', () => {
     expect(screen).not.toContain('Courier runs recorded.')
   })
 
-  it('renders exactly one real run and meal with their recorded values', () => {
+  it('marks a demo run and total as simulated while preserving its recorded values', () => {
     const screen = renderToStaticMarkup(<RecordBookScreen runs={[run]} meals={[meal]} locale="en" onOpenGoyo={vi.fn()} />)
 
     expect((screen.match(/record-book__entry/g) ?? [])).toHaveLength(2)
     for (const value of ['the Lantern Dispatch', '845 m', '2:05', 'Edo Roadrunner', 'onigiri', 'Salmon Onigiri', '120 g', '74', '4 nutrients', '2 nutrients']) expect(screen).toContain(value)
+    expect((screen.match(/SIMULATED/g) ?? [])).toHaveLength(2)
     expect(screen).not.toContain('coming soon')
+  })
+
+  it('does not add a simulated marker to a real-walk run, while a mixed session preserves the demo marker', () => {
+    const realRun: RecordBookRun = { ...run, title: 'the Dawn Reply', distanceMetres: 620, movementMode: 'walk' }
+    const realOnly = renderToStaticMarkup(<RecordBookScreen runs={[realRun]} meals={[]} locale="en" onOpenGoyo={vi.fn()} />)
+    const mixed = renderToStaticMarkup(<RecordBookScreen runs={[run, realRun]} meals={[]} locale="en" onOpenGoyo={vi.fn()} />)
+
+    expect(realOnly).not.toContain('SIMULATED')
+    expect((mixed.match(/SIMULATED/g) ?? [])).toHaveLength(2)
+    expect(mixed).toContain('the Lantern Dispatch')
+    expect(mixed).toContain('the Dawn Reply')
+    expect(mixed).toContain('the Dawn Reply</h3><dl')
+    expect(mixed).toContain('the Lantern Dispatch</h3><span class="record-book__mode-tag">SIMULATED</span>')
+  })
+
+  it('renders the simulated disclosure in Japanese', () => {
+    const screen = renderToStaticMarkup(<RecordBookScreen runs={[run]} meals={[]} locale="ja" onOpenGoyo={vi.fn()} />)
+
+    expect(screen).toContain('シミュレーション')
   })
 })

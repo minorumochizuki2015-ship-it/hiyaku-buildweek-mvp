@@ -107,7 +107,7 @@ describe('HIKYAKU static screens', () => {
 
   it('renders Arrival and its primary action', () => {
     const completion = mockCompleteMission({ distanceMeters: 480, durationSeconds: 100, completionPercent: 100, missionTitle: mission.title, courierId: mission.courierId }, 'en')
-    const screen = renderToStaticMarkup(<ArrivalScreen mission={mission} completion={completion} locale="en" stats={{ elapsedSeconds: 100, progress: 100, distanceMetres: 480 }} targetDistanceMetres={480} availableMinutes={10} onRestart={() => undefined} onReturnToTown={() => undefined} />)
+    const screen = renderToStaticMarkup(<ArrivalScreen mission={mission} completion={completion} locale="en" stats={{ elapsedSeconds: 100, progress: 100, distanceMetres: 480 }} targetDistanceMetres={480} availableMinutes={10} movementMode="demo" onRestart={() => undefined} onReturnToTown={() => undefined} />)
     expect(screen).toContain('Return to town')
     expect(screen.indexOf('Return to town')).toBeLessThan(screen.indexOf('Start Another Mission'))
     expect(screen).toContain('Start Another Mission')
@@ -120,11 +120,26 @@ describe('HIKYAKU static screens', () => {
     expect(screen).toContain('carried for Shinonome Mikoto')
     expect(screen).toContain(MIKOTO.crestName)
     expect(screen).toContain(MIKOTO.missionCompleteQuoteEn)
+    expect(screen).toContain('SIMULATED')
+  })
+
+  it('does not render a simulated distance marker for a real walk arrival', () => {
+    const completion = mockCompleteMission({ distanceMeters: 480, durationSeconds: 100, completionPercent: 100, missionTitle: mission.title, courierId: mission.courierId }, 'en')
+    const screen = renderToStaticMarkup(<ArrivalScreen mission={mission} completion={completion} locale="en" stats={{ elapsedSeconds: 100, progress: 100, distanceMetres: 480 }} targetDistanceMetres={480} availableMinutes={10} movementMode="walk" onRestart={() => undefined} onReturnToTown={() => undefined} />)
+
+    expect(screen).not.toContain('SIMULATED')
+  })
+
+  it('renders the simulated arrival marker in Japanese', () => {
+    const completion = mockCompleteMission({ distanceMeters: 480, durationSeconds: 100, completionPercent: 100, missionTitle: mission.title, courierId: mission.courierId }, 'ja')
+    const screen = renderToStaticMarkup(<ArrivalScreen mission={mission} completion={completion} locale="ja" stats={{ elapsedSeconds: 100, progress: 100, distanceMetres: 480 }} targetDistanceMetres={480} availableMinutes={10} movementMode="demo" onRestart={() => undefined} onReturnToTown={() => undefined} />)
+
+    expect(screen).toContain('シミュレーション')
   })
 
   it('keeps the existing Arrival-to-Nutrition route available', () => {
     const completion = mockCompleteMission({ distanceMeters: 480, durationSeconds: 100, completionPercent: 100, missionTitle: mission.title, courierId: mission.courierId }, 'en')
-    const screen = renderToStaticMarkup(<ArrivalScreen mission={mission} completion={completion} locale="en" stats={{ elapsedSeconds: 100, progress: 100, distanceMetres: 480 }} targetDistanceMetres={480} availableMinutes={10} onRestart={() => undefined} onReturnToTown={() => undefined} onNutrition={() => undefined} />)
+    const screen = renderToStaticMarkup(<ArrivalScreen mission={mission} completion={completion} locale="en" stats={{ elapsedSeconds: 100, progress: 100, distanceMetres: 480 }} targetDistanceMetres={480} availableMinutes={10} movementMode="demo" onRestart={() => undefined} onReturnToTown={() => undefined} onNutrition={() => undefined} />)
 
     expect(nutritionStateFor('arrival')).toBe('nutrition')
     expect(screen).toContain('class="nutrition-link"')
@@ -148,7 +163,7 @@ describe('HIKYAKU static screens', () => {
       ),
       renderToStaticMarkup(
         <AppShell {...shellProps}>
-          <ArrivalScreen mission={mission} completion={completion} locale="en" stats={{ elapsedSeconds: 100, progress: 100, distanceMetres: 480 }} targetDistanceMetres={480} availableMinutes={10} onRestart={() => undefined} onReturnToTown={() => undefined} onNutrition={() => undefined} />
+          <ArrivalScreen mission={mission} completion={completion} locale="en" stats={{ elapsedSeconds: 100, progress: 100, distanceMetres: 480 }} targetDistanceMetres={480} availableMinutes={10} movementMode="demo" onRestart={() => undefined} onReturnToTown={() => undefined} onNutrition={() => undefined} />
         </AppShell>,
       ),
     ]
@@ -249,7 +264,7 @@ describe('core journey render precedence', () => {
     const endMission = () => { state = 'completing' }
     const receiveCompletion = () => {
       completion = mockCompleteMission({ distanceMeters: 800, durationSeconds: 100, completionPercent: 100, missionTitle: mission.title, courierId: mission.courierId }, 'en')
-      sessionRuns.push({ title: mission.title, distanceMetres: stats.distanceMetres, durationSeconds: stats.elapsedSeconds, rank: completion.rank })
+      sessionRuns.push({ title: mission.title, distanceMetres: stats.distanceMetres, durationSeconds: stats.elapsedSeconds, rank: completion.rank, movementMode: 'demo' })
       state = 'completed'
     }
     const openNutrition = () => { state = 'nutrition' }
@@ -260,7 +275,7 @@ describe('core journey render precedence', () => {
         return renderToStaticMarkup(<JourneyScreen mission={issuedMission} locale="en" state={state} stats={stats} targetDistanceMetres={targetDistanceMetres} availableMinutes={10} movementMode="demo" locationStatus="" onPause={() => undefined} onEnd={endMission} />)
       }
       if (presentation === 'arrival' && issuedMission && completion) {
-        return renderToStaticMarkup(<ArrivalScreen mission={issuedMission} completion={completion} locale="en" stats={stats} targetDistanceMetres={targetDistanceMetres} availableMinutes={10} onRestart={() => undefined} onReturnToTown={returnToTown} onNutrition={openNutrition} />)
+        return renderToStaticMarkup(<ArrivalScreen mission={issuedMission} completion={completion} locale="en" stats={stats} targetDistanceMetres={targetDistanceMetres} availableMinutes={10} movementMode="demo" onRestart={() => undefined} onReturnToTown={returnToTown} onNutrition={openNutrition} />)
       }
       if (presentation === 'nutrition') {
         return renderToStaticMarkup(<NutritionFlow onBack={() => undefined} locale="en" distanceMetres={stats.distanceMetres} elapsedSeconds={stats.elapsedSeconds} />)
@@ -381,7 +396,7 @@ describe('client Worker fallback', () => {
     try {
       const result = await requestCompletionWithFallback({ distanceMeters: 800, durationSeconds: 100, completionPercent: 100, missionTitle: mission.title, courierId: MIKOTO.id, locale: 'en' })
       const state: JourneyState = 'completed'
-      const screen = renderToStaticMarkup(<ArrivalScreen mission={mission} completion={result.value} locale="en" stats={{ elapsedSeconds: 100, progress: 100, distanceMetres: 800 }} targetDistanceMetres={800} availableMinutes={10} isLocalNarrative={result.local} onRestart={() => undefined} onReturnToTown={() => undefined} />)
+      const screen = renderToStaticMarkup(<ArrivalScreen mission={mission} completion={result.value} locale="en" stats={{ elapsedSeconds: 100, progress: 100, distanceMetres: 800 }} targetDistanceMetres={800} availableMinutes={10} movementMode="demo" isLocalNarrative={result.local} onRestart={() => undefined} onReturnToTown={() => undefined} />)
 
       expect(fetchMock).toHaveBeenCalledWith('/api/complete', expect.objectContaining({ method: 'POST', signal: expect.any(AbortSignal) }))
       expect(result.local).toBe(true)
