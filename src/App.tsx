@@ -13,7 +13,7 @@ import { MIKOTO } from '../shared/couriers'
 import { distanceTargetMetres, rivalDistanceAtElapsedSeconds, type MovementMode, startWalkTracking } from './movement'
 import { checkpointRouteState } from './checkpointRoute'
 import { ArrivalSeal, buildSealSummary, formatSealDate, sealCanvasDataUrl, type ArrivalSealData } from './ArrivalSeal'
-import { NutritionScreen } from './NutritionScreen'
+import { NutritionFlow } from './nutrition/NutritionFlow'
 import { localizeContent, t, type Locale } from './i18n'
 
 type JourneyState = 'idle' | 'generating' | 'nutrition-before-journey' | 'ready' | 'active' | 'paused' | 'completing' | 'completed' | 'nutrition'
@@ -589,7 +589,7 @@ export default function App() {
   } else if (state === 'idle' || state === 'generating') {
     content = <DispatchScreen onGenerate={generateMission} generating={state === 'generating'} />
   } else if (state === 'nutrition-before-journey') {
-    content = <NutritionScreen onBack={() => setState('idle')} backLabel="Dispatch" onContinue={() => setState('ready')} />
+    content = <NutritionFlow onBack={() => setState('idle')} backLabel="Dispatch" onContinue={() => setState('ready')} locale={locale} />
   } else if (missionInProgress && activeMission) {
     content = <JourneyScreen mission={activeMission} state={state} stats={stats} targetDistanceMetres={targetDistanceMetres ?? 0} availableMinutes={availableMinutes} movementMode={movementMode} locationStatus={locationStatus} onPause={() => setState((current) => current === 'paused' ? 'active' : 'paused')} onEnd={() => {
       distanceMetresRef.current = targetDistanceMetres ?? 0
@@ -602,7 +602,7 @@ export default function App() {
       setState('idle')
     }} onNutrition={() => setState('nutrition')} />
   } else if (state === 'nutrition') {
-    content = <NutritionScreen onBack={() => setState('completed')} />
+    content = <NutritionFlow onBack={() => setState('completed')} locale={locale} />
   } else {
     content = <DispatchScreen onGenerate={generateMission} generating={false} />
   }
