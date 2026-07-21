@@ -10,15 +10,21 @@ const mission = mockGenerateMission({ availableMinutes: 10, energy: 'Steady', di
 describe('HIYAKU static screens', () => {
   it('renders Dispatch and its primary action', () => {
     const screen = renderToStaticMarkup(<DispatchScreen onGenerate={() => undefined} generating={false} />)
-    expect(screen).toContain('Generate My Mission')
-    expect(screen).toContain('A small walk, with a destination.')
+    expect(screen).toContain('Accept Dispatch')
+    expect(screen).toContain('Turn a short walk into an Edo courier mission.')
+    expect(screen).toContain('You are an Edo hikyaku (courier). Accept a dispatch, carry it, arrive.')
+    expect(screen).toContain('Real Walk')
+    expect(screen).toContain('Judge Demo')
+    expect(screen).toContain('Judge Demo simulates the walk so you can complete a full mission without moving.')
+    expect(screen).toContain('Real Walk: your location stays on your device.')
     expect(screen).toContain('/assets/courier-kanto-card.png')
   })
 
   it('renders Journey and its primary action', () => {
     const screen = renderToStaticMarkup(<JourneyScreen mission={mission} state="active" stats={{ elapsedSeconds: 20, progress: 50, distanceMetres: 400 }} targetDistanceMetres={800} availableMinutes={10} movementMode="demo" locationStatus="" onPause={() => undefined} onEnd={() => undefined} />)
     expect(screen).toContain('End Mission')
-    expect(screen).toContain('Demo Journey')
+    expect(screen).toContain('Judge Demo')
+    expect(screen).toContain('JUDGE DEMO')
     expect(screen).toContain('50% along the route')
     expect(screen).toContain('AI PACER · SIMULATED')
     expect(screen).toContain('Yuzu')

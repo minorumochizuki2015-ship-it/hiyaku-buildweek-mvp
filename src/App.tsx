@@ -101,7 +101,7 @@ export function DispatchScreen({ onGenerate, generating }: { onGenerate: (input:
         <span className="brand-mark" aria-hidden="true">飛</span>
         <div>
           <p className="eyebrow">HIYAKU / EDO COURIER</p>
-          <h1 id="dispatch-title">A small walk, with a destination.</h1>
+          <h1 id="dispatch-title">Turn a short walk into an Edo courier mission.</h1>
         </div>
       </header>
 
@@ -109,7 +109,7 @@ export function DispatchScreen({ onGenerate, generating }: { onGenerate: (input:
         <img src="/assets/courier-kanto-card.png" alt="Edo courier of Kanto, ready for dispatch" />
         <div className="dispatch-hero-copy">
           <span className="seal">DEMO<br />EDO</span>
-          <p>Tell us the time and spirit you have today. We will hand you one courier mission.</p>
+          <p>You are an Edo hikyaku (courier). Accept a dispatch, carry it, arrive.</p>
         </div>
       </section>
 
@@ -137,13 +137,15 @@ export function DispatchScreen({ onGenerate, generating }: { onGenerate: (input:
           <div className="choice-row movement-row">
             <label className="choice">
               <input type="radio" name="movement-mode" value="walk" checked={movementMode === 'walk'} onChange={() => setMovementMode('walk')} />
-              <span>Walk Mode</span>
+              <span>Real Walk</span>
             </label>
             <label className="choice">
               <input type="radio" name="movement-mode" value="demo" checked={movementMode === 'demo'} onChange={() => setMovementMode('demo')} />
-              <span>Demo Journey</span>
+              <span>Judge Demo</span>
             </label>
           </div>
+          <p className="movement-helper">Judge Demo simulates the walk so you can complete a full mission without moving.</p>
+          <p className="privacy-note">Real Walk: your location stays on your device.</p>
         </fieldset>
 
         <fieldset>
@@ -163,7 +165,7 @@ export function DispatchScreen({ onGenerate, generating }: { onGenerate: (input:
           <input value={displayName} onChange={(event) => setDisplayName(event.target.value)} maxLength={40} placeholder="Courier name" />
         </label>
         <button className="primary-button" type="submit" disabled={generating}>
-          {generating ? 'Preparing your mission…' : 'Generate My Mission'}
+          {generating ? 'Preparing your mission…' : 'Accept Dispatch'}
         </button>
       </form>
     </main>
@@ -183,7 +185,7 @@ export function JourneyScreen({ mission, state, stats, targetDistanceMetres, ava
 }) {
   const distance = Math.round(stats.distanceMetres)
   const rivalDistance = rivalDistanceAtElapsedSeconds(targetDistanceMetres, availableMinutes, mission.title, stats.elapsedSeconds)
-  const progressLabel = state === 'ready' ? 'Mission ready' : state === 'paused' ? 'Journey paused' : state === 'completing' ? 'Writing arrival…' : movementMode === 'walk' ? 'Walk Mode' : 'Demo Journey'
+  const progressLabel = state === 'ready' ? 'Mission ready' : state === 'paused' ? 'Journey paused' : state === 'completing' ? 'Writing arrival…' : movementMode === 'walk' ? 'Real Walk' : 'Judge Demo'
   const ringRadius = 84
   const ringCircumference = 2 * Math.PI * ringRadius
 
@@ -194,7 +196,7 @@ export function JourneyScreen({ mission, state, stats, targetDistanceMetres, ava
           <p className="eyebrow">{progressLabel}</p>
           <h1 id="journey-title">{mission.title}</h1>
         </div>
-        <span className="demo-badge">{movementMode === 'walk' ? 'WALK' : 'DEMO'}</span>
+        <span className="demo-badge">{movementMode === 'walk' ? 'REAL WALK' : 'JUDGE DEMO'}</span>
       </header>
 
       <section className="journey-stage" aria-label="Courier route progress">
@@ -369,7 +371,7 @@ export default function App() {
     if (state !== 'active' || movementMode !== 'walk' || targetDistanceMetres === null) return
     if (!navigator.geolocation) {
       const fallback = window.setTimeout(() => {
-        setLocationStatus('Location unavailable — continuing with Demo Journey.')
+        setLocationStatus('Location unavailable — continuing with Judge Demo.')
         setMovementMode('demo')
       }, 0)
       return () => window.clearTimeout(fallback)
@@ -385,7 +387,7 @@ export default function App() {
         if (progress === 100) setState('completing')
       },
       () => {
-        setLocationStatus('Location unavailable — continuing with Demo Journey.')
+        setLocationStatus('Location unavailable — continuing with Judge Demo.')
         setMovementMode('demo')
       },
     )
